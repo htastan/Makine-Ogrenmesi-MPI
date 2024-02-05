@@ -7,9 +7,9 @@
 ## Ders Planı
 
 
-1. Giriş: [html](/Sunumlar/01-Giris.html) | [pdf](Sunumlar/01-Giris.pdf)
+1. Giriş: [html](/01-Giris.html) | [pdf](Sunumlar/01-Giris.pdf)
 
-2. Temel Kavramlar: [html](/Sunumlar/02-Temel-Kavramlar.html) | [pdf](Sunumlar/02-Temel-Kavramlar.pdf)
+2. Temel Kavramlar: [html](/docs/02-Temel-Kavramlar.html) | [pdf](Sunumlar/02-Temel-Kavramlar.pdf)
 
 3. R Programı 
     - R Base 
