@@ -6,7 +6,5 @@
 
 
 
-1. **Giriş**: [html](/Sunumlar/01-Giris.html) | [pdf](Sunumlar/01-Giris.pdf)
-
 
 
