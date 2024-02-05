@@ -1,5 +1,8 @@
 ---
-title: "Makine-Ogrenmesi-MPI"
+title: "Makine Öğrenmesi"
+author: 
+  name: "Prof. Dr. Hüseyin Taştan"
+  affiliation: "Yıldız Teknik Üniversitesi"
 output: html_document
 date: ""
 ---
