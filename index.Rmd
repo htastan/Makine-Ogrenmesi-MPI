@@ -42,6 +42,8 @@ knitr::opts_chunk$set(echo = TRUE)
     - Uygulamalar: [html](R/R-Gecerleme.html) | [RMarkdown](R/R-Gecerleme.Rmd)
 
 7. Model Seçimi ve Düzenlileştirme 
+    - Sunum notları: [html](docs/Duzenlilestirme.html) | [pdf](docs/Duzenlilestirme.pdf)
+    - Uygulamalar: [html](R/R-Duzenlilestirme.html) | [RMarkdown](R/R-Duzenlilestirme.Rmd)
 
 8. Doğrusal Olmayan Yöntemler 
 
