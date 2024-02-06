@@ -3,7 +3,10 @@ title: "Makine Öğrenmesi"
 author: 
   name: "Prof. Dr. Hüseyin Taştan"
   affiliation: "Yıldız Teknik Üniversitesi"
-output: html_document
+output: 
+  html_document:
+    theme: flatly
+    highlight: haddock
 date: ""
 ---
 
@@ -28,33 +31,47 @@ knitr::opts_chunk$set(echo = TRUE)
       - Repository: <https://github.com/htastan/RMarkdown-Ornek>
     - R Veri İndirme: <https://htastan.github.io/R-veri-indirme/R_veri_paketleri>
       - Repository: <https://github.com/htastan/R-veri-indirme>
+<br/>
+<br/>
 
 4. Regresyon Problemleri
     - Sunum notları: [html](docs/Regresyon.html) | [pdf](docs/Regresyon.pdf)
     - Uygulamalar: [html](R/R-Regresyon.html) | [RMarkdown](R/R-Regresyon.Rmd)
+<br/>
+<br/>
 
 5. Sınıflandırma Problemleri 
     - Sunum notları: [html](docs/Siniflandirma.html) | [pdf](docs/Siniflandirma.pdf)
     - Uygulamalar: [html](R/R-Siniflandirma.html) | [RMarkdown](R/R-Siniflandirma.Rmd)
+<br/>
+<br/>
 
 6. Geçerleme Yöntemleri ve Bootstrap 
     - Sunum notları: [html](docs/Gecerleme.html) | [pdf](docs/Gecerleme.pdf)
     - Uygulamalar: [html](R/R-Gecerleme.html) | [RMarkdown](R/R-Gecerleme.Rmd)
+<br/>
+<br/>
 
 7. Model Seçimi ve Düzenlileştirme 
     - Sunum notları: [html](docs/Duzenlilestirme.html) | [pdf](docs/Duzenlilestirme.pdf)
     - Uygulamalar: [html](R/R-Duzenlilestirme.html) | [RMarkdown](R/R-Duzenlilestirme.Rmd)
+<br/>
+<br/>
 
 8. Doğrusal Olmayan Yöntemler 
     - Sunum notları: [html](docs/Dogrusal-olmayan-modeller.html) | [pdf](docs/Dogrusal-olmayan-modeller.pdf)
     - Uygulamalar: [html](R/R-Dogrusal-olmayan-modeller.html) | [RMarkdown](R/R-Dogrusal-olmayan-modeller.Rmd) 
+<br/>
+<br/>
 
 9. Ağaç Bazlı Yöntemler 
     - Sunum notları: [html](docs/Agac-bazli-yontemler.html) | [pdf](docs/Agac-bazli-yontemler.pdf)
     - Uygulamalar: [html](R/R-Agac-bazli-yontemler.html) | [RMarkdown](R/R-Agac-bazli-yontemler.Rmd)  
-
+<br/>
 10. Gözetimsiz Öğrenme
     - Sunum notları: [html](docs/Gozetimsiz-Ogrenme.html) | [pdf](docs/Gozetimsiz-Ogrenme.pdf)
     - Uygulamalar: [html](R/R-Gozetimsiz-ogrenme.html) | [RMarkdown](R/R-Gozetimsiz-ogrenme.Rmd)   
+<br/>
+<br/>
 
 
