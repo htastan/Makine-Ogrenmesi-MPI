@@ -23,8 +23,15 @@ knitr::opts_chunk$set(echo = TRUE)
 3. R Programı 
     - R Base: [html](R/R-Base.html)
     - R Tidyverse: [html](R/R-Tidyverse.html) 
+    - R Markdown Nedir: [html](R/RMarkdown.html) 
+    - R Markdown Örnek: <https://htastan.github.io/RMarkdown-Ornek/RMarkdown_Ornek>
+      - Repository: <https://github.com/htastan/RMarkdown-Ornek>
+    - R Veri İndirme: <https://htastan.github.io/R-veri-indirme/R_veri_paketleri>
+      - Repository: <https://github.com/htastan/R-veri-indirme>
 
-4. Regresyon Problemleri 
+4. Regresyon Problemleri
+    - Sunum notları: 
+    - Uygulamalar: 
 
 5. Sınıflandırma Problemleri 
 
