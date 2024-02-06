@@ -46,9 +46,15 @@ knitr::opts_chunk$set(echo = TRUE)
     - Uygulamalar: [html](R/R-Duzenlilestirme.html) | [RMarkdown](R/R-Duzenlilestirme.Rmd)
 
 8. Doğrusal Olmayan Yöntemler 
+    - Sunum notları: [html](docs/Dogrusal-olmayan-modeller.html) | [pdf](docs/Dogrusal-olmayan-modeller.pdf)
+    - Uygulamalar: [html](R/R-Dogrusal-olmayan-modeller.html) | [RMarkdown](R/R-Dogrusal-olmayan-modeller.Rmd) 
 
-9. Ağaç Yöntemleri 
+9. Ağaç Bazlı Yöntemler 
+    - Sunum notları: [html](docs/Agac-bazli-yontemler.html) | [pdf](docs/Agac-bazli-yontemler.pdf)
+    - Uygulamalar: [html](R/R-Agac-bazli-yontemler.html) | [RMarkdown](R/R-Agac-bazli-yontemler.Rmd)  
 
-10. Gözetimsiz Öğrenme 
+10. Gözetimsiz Öğrenme
+    - Sunum notları: [html](docs/Gozetimsiz-Ogrenme.html) | [pdf](docs/Gozetimsiz-Ogrenme.pdf)
+    - Uygulamalar: [html](R/R-Gozetimsiz-ogrenme.html) | [RMarkdown](R/R-Gozetimsiz-ogrenme.Rmd)   
 
-11. Metin Analizi 
+

@@ -1,0 +1,563 @@
+---
+title: "Ağaç Bazlı Yöntemler: R Uygulamaları"
+subtitle: Makine Öğrenmesi (MP İktisat TYL)
+author: 
+  name: "Prof. Dr. Hüseyin Taştan"
+  affiliation: "Yıldız Teknik Üniversitesi"
+date: ""
+output:
+  html_document: 
+    number_sections: true
+    theme: lumen
+    highlight: haddock 
+    # code_folding: show
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: false
+---
+<style type="text/css"> 
+body{
+  background-color: #FAFAFA;
+  font-size: 18px;
+  line-height: 1.8;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis')
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+``` 
+
+<br/>
+<br/>
+
+
+# R ile Sınıflandırma Ağaçları
+ 
+`R`'da ağaç tahmini için çok sayıda paket vardır. Bunlardan biri hem regresyon hem de sınıflama ağaçlarının tahminini yapan `tree` paketidir. Burada örnek olarak  `Carseats` veri setini kullanacağız. `Sales` değişkeni 8 değeri kullanılarak ikili kategorik değişkene dönüştürülmüştür: 
+```{r, warning=FALSE}
+library(tree)
+library(ISLR)
+attach(Carseats)
+Carseats$High <- factor(ifelse(Carseats$Sales<=8,"No","Yes"))  
+```
+
+`High` Satışlar 8'den büyükse "Yes" (1) değilse "No" (0) değerini almaktadır. 
+
+`Sales` değişkenini dışlayarak diğer tüm değişkenlerle `High` için bir ağaç tahmin edelim: 
+```{r}
+tree.carseats <- tree(High ~ . -Sales, data = Carseats)
+summary(tree.carseats) 
+```
+
+Eğitim hata oranı %9 olarak bulunmuştur (misclassification error rate).
+
+Tahmin edilen ağacın yaprak sayısı 27'dir (terminal node): 
+```{r}
+plot(tree.carseats)
+text(tree.carseats, pretty=0)
+```
+
+Satışların yüksekliğini etkileyen en önemli değişken raf yeridir (`ShelveLoc`, **B**ad, **G**ood, **M**edium). İlk düğümde Kötü ve Orta kalitedeki raf lokasyonları İyi raf lokasyonundan ayrılmaktadır. 
+
+Ağacın tüm detayları: 
+```{r}
+tree.carseats
+```
+
+
+Test hata oranı: 
+```{r}
+set.seed(2)
+train <- sample(1:nrow(Carseats), 200)
+Carseats.test <- Carseats[-train,]
+High.test <- Carseats$High[-train]
+tree.carseats <- tree(High ~ . -Sales, Carseats, subset=train)
+tree.pred <- predict(tree.carseats, Carseats.test, type="class")
+table(tree.pred, High.test)
+```
+
+```{r}
+# correct prediction rate
+(104+50)/200
+```
+
+Ağacın çapraz geçerleme ile budanması,  `cv.tree()` fonksiyonu: 
+```{r} 
+set.seed(11)
+cv.carseats <- cv.tree(tree.carseats, FUN=prune.misclass)
+names(cv.carseats)
+cv.carseats
+```
+
+Yukarıdaki çıktıda, `dev` çapraz geçerleme hatasını, `k` ayarlama parametresi $\alpha$'yı ve `size` ağacın büyüklüğünü (terminal düğüm sayısı) göstermektedir. En küçük çapraz geçerleme hatası 74'dür ve yaprak sayısı 8 olan bir ağaca karşılık gelmektedir.  
+
+Ağaç büyüklüğü ve k (cost-complexity parameter)'ye göre hata oranının grafikleri: 
+```{r}
+par(mfrow=c(1,2))
+plot(cv.carseats$size, cv.carseats$dev, type="b")
+plot(cv.carseats$k, cv.carseats$dev, type="b")
+```
+
+Şimdi `prune.misclass()` fonksiyonunu kullanarak ağacı budayabiliriz: 
+```{r}
+prune.carseats <- prune.misclass(tree.carseats, best=8)
+plot(prune.carseats)
+text(prune.carseats, pretty=0)
+```
+
+Not: kitapta 9 yapraklı bir ağaç tahmin edilmiştir: 
+```{r}
+prune.carseats <- prune.misclass(tree.carseats, best=9)
+plot(prune.carseats)
+text(prune.carseats,pretty=0)
+```
+
+Budanmış ağacın kestirim performansı nasıldır? `predict()` fonksiyonuyla sınıflandırma hatasını tahmin edelim:
+```{r}
+tree.pred <- predict(prune.carseats, Carseats.test, type="class")
+table(tree.pred, High.test)
+(97+58)/200
+```
+
+<br/>
+
+# R ile Regresyon Ağaçları
+
+Örnek olarak `MASS` paketinde yer alan `Boston` ev fiyatları verisini kullanacağız. Bağımlı değişken medyan ev fiyatları (`medv`). Eğitim verilerinde ağaç tahmini: 
+```{r}
+library(MASS)
+library(tree)
+set.seed(81)
+train <- sample(1:nrow(Boston), nrow(Boston)/2)
+tree_boston <- tree(medv ~ ., 
+                    data = Boston, 
+                    subset = train)
+summary(tree_boston)
+```
+
+Yukarıdaki çıktıya göre ağaçta 4 değişken year alıyor: "rm"    "lstat" "crim"  "age"  
+
+```{r}
+plot(tree_boston)
+text(tree_boston, pretty=0)
+```
+
+`lstat`: sosyoekonomik statüsü düşük olan hanelerin oranı. Bu değişkenin düşük olduğu yerlerde evler daha pahalıdır. 
+
+
+Ağacın budanması: 
+```{r}
+cv_boston <- cv.tree(tree_boston)
+plot(cv_boston$size, cv_boston$dev, type='b')
+```
+
+Çapraz geçerleme en karmaşık ağacı seçti. Yine de ağacı budamak istersek `prune.tree()` fonksiyonunu kullanabiliriz:
+```{r}
+prune_boston <- prune.tree(tree_boston, best=5)
+plot(prune_boston)
+text(prune_boston, pretty=0)
+```
+
+Budanmamış ağaç üzerinden test hatasının tahmini: 
+```{r}
+yhat <- predict(tree_boston, newdata = Boston[-train,])
+boston_test <- Boston[-train, "medv"]
+plot(yhat, boston_test)
+abline(0,1)
+mean((yhat - boston_test)^2)
+```
+Test MSE = 18.93.  
+
+
+<br/>
+
+# Bagging ve Rassal Ormanlar 
+
+Örnek veri seti = `Boston`. 
+
+Bagging ve rassal ormanlar için R `randomForest` 
+paketi kullanılabilir. Bagging rassal ormanların özel bir halidir (m = p). 
+
+Bagging tahmini: 
+```{r, warning=FALSE}
+library(randomForest)
+set.seed(1)
+bag_boston <- randomForest(medv ~ ., 
+                           data = Boston, 
+                           subset = train, 
+                           mtry = 13, 
+                           importance = TRUE
+                           )
+bag_boston
+```
+
+`mtry=13` ayarlanma parametresi = 13 değişkenin tamamı her ayırımda dikkate alınacak (bagging). Modelin test setindeki performansı: 
+```{r}
+yhat_bag <- predict(bag_boston, newdata = Boston[-train,])
+plot(yhat_bag, boston_test)
+abline(0,1)
+mean((yhat_bag - boston_test)^2)
+```
+
+Test MSE = 10.13872. 
+
+`randomForest()` fonksiyonunda `ntree` opsiyonu ile ağacın büyüklüğünü değiştirebiliriz:
+```{r}
+bag_boston <- randomForest(medv ~ ., 
+                           data = Boston, 
+                           subset = train, 
+                           mtry = 13, 
+                           ntree = 25)
+yhat_bag <- predict(bag_boston, newdata = Boston[-train,])
+mean((yhat_bag - boston_test)^2)
+```
+
+Rassal orman tahmini de benzer adımlara sahiptir. Ancak bu durumda daha küçük bir `mtry` değeri kullanırız. Default olarak `randomForest()` fonksiyonu $p/3$ değişkeni kullanır (sınıflama için 
+$\sqrt{p}$). Aşağıda `mtry = 6` kullanılmıştır: 
+```{r}
+# random forest prediction
+set.seed(1)
+rf_boston <- randomForest(medv ~ ., 
+                          data = Boston, 
+                          subset = train, 
+                          mtry=6, 
+                          importance = TRUE)
+yhat_rf <- predict(rf_boston, newdata = Boston[-train,])
+mean((yhat_rf - boston_test)^2)
+```
+
+Rassal ormanlar küçük de olsa daha iyi bir test başarısı sergiledi. 
+
+`importance()` fonksiyonunu kullanarak her bir değişkenin önem düzeyini görebiliriz:
+```{r}
+importance(rf_boston)
+```
+
+```{r}
+varImpPlot(rf_boston)
+```
+
+Sonuçlara göre bölgenin refah düzeyi (`lstat`) ve ev büyüklüğü (`rm`) en önemli değişkenlerdir. 
+
+<br/>
+
+# Boosting 
+
+## `{gbm}` Paketi 
+
+Boosting (takviye) yöntemi için `{gbm}` paketindeki `gbm()` fonksiyonu kullanılabilir (bkz. [https://www.rdocumentation.org/packages/gbm/versions/2.1.8](https://www.rdocumentation.org/packages/gbm/versions/2.1.8)). 
+
+Örnek olarak `Boston` veri seti için bir takviyeli ağaç tahmin edelim. Bunun için  `gbm()` fonksiyonunu `distribution="gaussian"` opsiyonu ile çalıştıracağız (regresyon problemi olduğu için). İkili sınıflama problemleri için `distribution="bernoulli"` kullanılabilir. `n.trees = 5000` opsiyonu 5000 ağaç oluşturulacağını, `interaction.depth = 4` her ağacın derinliğini belirtmektedir.  
+```{r, warning=FALSE}
+library(gbm)
+set.seed(1)
+boost_boston <- gbm(medv ~ ., 
+                    data = Boston[train,], 
+                    distribution = "gaussian",
+                    n.trees = 5000, 
+                    interaction.depth = 4)
+```
+
+
+```{r, warning=FALSE}
+summary(boost_boston)
+```
+
+Yukarıda `summary()` fonksiyonu her bir değişken için göreceli etki istatistiklerini ve grafiğini vermektedir. Buna göre, önceki sonuçlarla uyumlu olarak, `lstat` ve `rm` en önemli değişkenlerdir. 
+
+Buna ek olarak değişkenlerin kısmi etkilerini de görselleştirebiliriz:
+```{r}
+par(mfrow=c(1,2))
+plot(boost_boston, i="rm")
+plot(boost_boston, i="lstat")
+```
+
+Kısmi bağımlılık grafikleri diğer değişkenlerin etkisi arındırıldıktan sonra bir değişkenin çıktı üzerindeki marjinal etkisini göstermektedir. Buna göre medyan ev fiyatları `rm`'ye göre artarken, `lstat` değişkenine göre azalmaktadır. 
+
+Şimdi takviyeli (boosted) ağaç modeline göre `medv` değişkenini test verisinde tahmin edelim
+```{r}
+yhat_boost <- predict(boost_boston, 
+                      newdata = Boston[-train,], 
+                      n.trees = 5000
+                      )
+boston_test <- Boston[-train, "medv"]
+mean((yhat_boost - boston_test)^2)
+```
+
+Yukarıda default $\lambda = 0.1$ (küçültme, shrinkage) parametresi kullanıldı. $\lambda=0.2$ için yeniden tahmin edelim: 
+```{r}
+set.seed(1)
+boost_boston <- gbm(medv ~ ., 
+                    data = Boston[train,],
+                    distribution = "gaussian", 
+                    n.trees=5000,
+                    interaction.depth = 4, 
+                    shrinkage = 0.2, 
+                    verbose = F
+                    )
+# kestirimleri test verileriyle hesapla:
+yhat_boost <- predict(boost_boston, newdata=Boston[-train,], n.trees=5000)
+mean((yhat_boost - boston_test)^2)
+```
+ 
+
+Çapraz geçerleme 
+```{r}
+# CV
+set.seed(1)
+boston_boost_cv <- gbm(medv ~ ., 
+                       data = Boston[train,], 
+                       distribution = "gaussian", 
+                       n.trees = 5000, 
+                       interaction.depth=4, 
+                       shrinkage = 0.1, 
+                       verbose = F, 
+                       cv.folds = 10)
+
+#find the best prediction
+best_boost_boston <- gbm.perf(boston_boost_cv)
+```
+
+```{r}
+yhat_boost = predict(boston_boost_cv, 
+                     newdata = Boston[-train,],
+                     n.trees = best_boost_boston)
+mean((yhat_boost - boston_test)^2)
+```
+
+## `{XGBoost}` Paketi 
+
+`{XGBoost}` (eXtreme Gradient Boosting) (bkz. [https://cran.r-project.org/web/packages/xgboost/index.html](https://cran.r-project.org/web/packages/xgboost/index.html) ve [https://xgboost.readthedocs.io/en/latest/R-package/xgboostPresentation.html](https://xgboost.readthedocs.io/en/latest/R-package/xgboostPresentation.html)) kütüphanesi gradyan takviye yöntemini uygular. 
+
+```{r}
+library(xgboost)
+```
+
+
+```{r}
+# eğitim-test ayırımı (yukarıda yapmıştık)
+train_boston <- Boston[train,]
+test_boston <- Boston[-train,]
+```
+
+`{XGBoost}` paketinde verilerin `xgb.DMatrix` nesnesine dönüştürülmesi gerekir (bu sparse ya da dense matrislere izin verir ve böylece hesaplamalar daha etkin yapılabilir). 
+```{r}
+# veri matrisini oluştur
+data_matrix <- as.matrix(train_boston[!names(train_boston) %in% c("medv")])
+#
+dtrain <- xgb.DMatrix(data = data_matrix, # kestirim değişkenlerini içeren matris
+                      label = train_boston$medv # tepki değişkenini içeren vektör 
+                      )
+
+xgb_boston <- xgboost(data = dtrain, 
+                      max_depth = 2, 
+                      eta = 0.2, 
+                      nthread = 2, 
+                      nrounds = 40, 
+                      lambda = 0, 
+                      objective = "reg:squarederror")
+```
+
+
+```{r}
+# test veri matrisini oluştur
+dtest <- as.matrix(test_boston[!names(train_boston) %in% c("medv")])
+# kestirimleri hesapla
+yhat_xgb <- predict(xgb_boston, dtest)
+# MSE hesapla
+mean((yhat_xgb - test_boston$medv)^2)
+```
+
+```{r}
+# Çapraz geçerleme ile hiperparametre seçimi
+set.seed(123456)
+param <- list("max_depth" = 3, 
+              "eta" = 0.2, 
+              "objective" = "reg:squarederror", 
+              "lambda" = 0)
+cv_nround <- 500
+cv_nfold <- 5
+xgb_boston_cv <- xgb.cv(param = param, 
+                        data = dtrain, 
+                        nfold = cv_nfold, 
+                        nrounds = cv_nround,
+                        early_stopping_rounds = 200, # 
+                        verbose = 0)
+```
+
+```{r}
+xgb_boston <- xgboost(param = param, 
+                     data = dtrain, 
+                     nthread = 2, 
+                     nrounds = xgb_boston_cv$best_iteration, 
+                     verbose = 0)
+```
+
+```{r}
+yhat_xgb <- predict(xgb_boston, dtest)
+mean((yhat_xgb - test_boston$medv)^2)
+```
+```{r}
+importance <- xgb.importance(colnames(train_boston[!names(train_boston) %in% c("medv")]), model=xgb_boston)
+importance
+```
+
+```{r}
+xgb.plot.importance(importance, rel_to_first=TRUE, xlab="Relative Importance")
+```
+
+
+# Örnek: Titanic 
+
+Bu örnekte Titanic kazasında hayatını kaybedenler için bir sınıflandırma ağacı oluşturmaya çalışacağız (detaylar için bkz. [RMS Titanic](https://en.wikipedia.org/wiki/RMS_Titanic) ). Bu trajik kaza çok fazla kişinin ölümü ile sonuçlanmıştır. Böyle kazaların tekrar yaşanmaması için çok sayıda güvenlik tedbirlerinin alınmasında ve yasal düzenleme yapılmasında etkili olmuştur. 
+
+Sorular: acaba bu kadar kişinin ölümünün ardındaki nedenler nelerdir? Hangi değişkenler bireyin hayatta kalma olasılığı üzerinde önemli bir etkiye sahiptir?
+
+Önce verileri `R`'a tanıtalım: 
+```{r, warning=FALSE}
+library(tidyverse)
+library(modelr)
+library(broom)
+set.seed(1234)
+
+theme_set(theme_minimal())
+
+library(titanic)
+# use the training data 
+titanic <- titanic_train %>%
+  as_tibble()
+
+titanic %>%
+  head() %>%
+  knitr::kable()
+```
+
+
+Çıktı değişkenini oluştur: 
+```{r}
+titanic_tree_data <- titanic %>%
+  mutate(Survived = if_else(Survived == 1, "Survived", "Died"),
+         Survived = as.factor(Survived),
+         Sex = as.factor(Sex))
+titanic_tree_data
+table(titanic_tree_data$Survived)
+```
+
+Sadece  `age` ve `sex` özniteliklerini kullanarak küçük bir ağaç tahmin edelim. Bunun için `partykit` paketini kullanacağız: 
+```{r, warning=FALSE}
+library(partykit)
+titanic_tree <- ctree(Survived ~ Age + Sex, data = titanic_tree_data)
+titanic_tree
+```
+
+Oluşturduğumuz ağaç 3 son düğüme (yaprak) ve 2 iç düğüme sahiptir. Ağacın görselleştirilmesi: 
+```{r}
+plot(titanic_tree)
+```
+
+Sınıflandırma hatası: 
+```{r}
+# compute predicted values
+pred1 <- predict(titanic_tree) 
+# true classifications
+predsuccess1 <- (pred1 == titanic_tree_data$Survived)
+# wrong classifications
+prederror1 <- !predsuccess1
+# average misclassification rate: 
+mean(prederror1, na.rm = TRUE)
+
+# or just in one line: 
+# 1 - mean(predict(titanic_tree) == titanic_tree_data$Survived, na.rm = TRUE)
+```
+
+Bu basit ağaçla bile hata oranı yaklaşık % 21 olarak bulundu. 
+
+Veri setinde yer alan diğer öznitelikleri de kullanarak daha karmaşık bir ağaç tahmin edelim. Önce karakter değişkenleri faktör değişkenine dönüştürelim: 
+```{r}
+titanic_tree_full_data <- titanic %>%
+  mutate(Survived = if_else(Survived == 1, "Survived",
+                            if_else(Survived == 0, "Died", NA_character_))) %>%
+  mutate_if(is.character, as.factor)
+```
+
+Ağacı tahmin et:  
+```{r}
+
+titanic_tree_full <- ctree(Survived ~ Pclass + Sex + Age + SibSp +
+                             Parch + Fare + Embarked,
+                           data = titanic_tree_full_data)
+titanic_tree_full
+
+```
+
+```{r}
+plot(titanic_tree_full,  ip_args = list(pval = FALSE, id = FALSE),
+     tp_args = list( id = FALSE) )
+```
+
+Hata oranı: 
+```{r}
+# error rate
+1 - mean(predict(titanic_tree_full) == titanic_tree_data$Survived,
+         na.rm = TRUE)
+```
+
+Hata oranı daha da düştü, %18.3. 
+
+
+Şimdi `caret` paketini kullanarak bir rassal orman tahmin edelim. Bunun için  `caret::train()` fonksiyonunu kullanacağız:  
+```{r}
+# drop the NA obs.
+titanic_rf_data <- titanic_tree_full_data %>%
+  select(Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked) %>%
+  drop_na()
+titanic_rf_data
+```
+
+```{r, warning=FALSE}
+# build a random forest with ntree=200
+library(caret)
+titanic_rf <- train(Survived ~ ., data = titanic_rf_data,
+                    method = "rf",
+                    ntree = 200,
+                    trControl = trainControl(method = "oob"))
+titanic_rf
+```
+
+
+
+```{r}
+str(titanic_rf, max.level = 1)
+# Info on the final model: 
+titanic_rf$finalModel
+```
+
+```{r}
+# confusion table 
+knitr::kable(titanic_rf$finalModel$confusion)
+```
+
+
+
+```{r}
+# look at an individual tree
+randomForest::getTree(titanic_rf$finalModel, labelVar = TRUE)
+```
+
+
+
+```{r}
+# var importance plot 
+randomForest::varImpPlot(titanic_rf$finalModel)
+```
+
+
+
+<br>
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
+
