@@ -34,8 +34,12 @@ knitr::opts_chunk$set(echo = TRUE)
     - Uygulamalar: [html](R/R-Regresyon.html) | [RMarkdown](R/R-Regresyon.Rmd)
 
 5. Sınıflandırma Problemleri 
+    - Sunum notları: [html](docs/Siniflandirma.html) | [pdf](docs/Siniflandirma.pdf)
+    - Uygulamalar: [html](R/R-Siniflandirma.html) | [RMarkdown](R/R-Siniflandirma.Rmd)
 
 6. Geçerleme Yöntemleri ve Bootstrap 
+    - Sunum notları: [html](docs/Gecerleme.html) | [pdf](docs/Gecerleme.pdf)
+    - Uygulamalar: [html](R/R-Gecerleme.html) | [RMarkdown](R/R-Gecerleme.Rmd)
 
 7. Model Seçimi ve Düzenlileştirme 
 
