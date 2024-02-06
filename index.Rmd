@@ -16,9 +16,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Ders Planı
 
 
-1. Giriş: [html](docs/01-Giris.html) | [pdf](docs/01-Giris.pdf)
+1. Giriş: [html](docs/Giris.html) | [pdf](docs/Giris.pdf)
 
-2. Temel Kavramlar: [html](docs/02-Temel-Kavramlar.html) | [pdf](docs/02-Temel-Kavramlar.pdf)
+2. Temel Kavramlar: [html](docs/Temel-Kavramlar.html) | [pdf](docs/Temel-Kavramlar.pdf)
 
 3. R Programı 
     - R Base 
