@@ -30,8 +30,8 @@ knitr::opts_chunk$set(echo = TRUE)
       - Repository: <https://github.com/htastan/R-veri-indirme>
 
 4. Regresyon Problemleri
-    - Sunum notları: 
-    - Uygulamalar: 
+    - Sunum notları: [html](docs/Regresyon.html) | [pdf](docs/Regresyon.pdf)
+    - Uygulamalar: [html](R/R-Regresyon.html) | [RMarkdown](R/R-Regresyon.Rmd)
 
 5. Sınıflandırma Problemleri 
 
