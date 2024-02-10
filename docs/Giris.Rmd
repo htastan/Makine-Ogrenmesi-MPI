@@ -296,7 +296,7 @@ Detaylar için bkz. Alpaydın (2018, s. 10 ve s. 383)
 
 - Progressive Insurance (fiyatlama analitiği): Araç sigortası konusunda uzmanlaşmış ABD merkezli bir şirket olan Progressive Insurance, sürücülerden Snapshot isimli bir uygulama aracılığıyla toplanan sürüş bilgilerine dayanarak fiyatlama tahmini yapmaktadır. Bu uygulamanın yaygınlaşması için sigorta priminde indirim sunmaktadır.  
 
-- AXA Global Hayat Sigortası (fiytalama): AXA derin öğrenme algoritmalarını kullanarak yüksek riskli müşterilerin tahmin edilmesine dayanan bir fiyatlandırma stratejisi kullanmaktadır. (kullanılan model 70 risk göstergesi içermektedir ve yaklaşık %78 doğruluk oranına sahiptir).
+- AXA Global Hayat Sigortası (fiyatlama): AXA derin öğrenme algoritmalarını kullanarak yüksek riskli müşterilerin tahmin edilmesine dayanan bir fiyatlandırma stratejisi kullanmaktadır. (kullanılan model 70 risk göstergesi içermektedir ve yaklaşık %78 doğruluk oranına sahiptir).
 
 - Anadolu Sigorta (dolandırıcılık tespiti): Anadolu Sigorta, makine öğrenimi algoritmalarını kullanarak sahtekarlık tahmini yapmaktadır. Böylece ayda 25000-30000 talebi manuel olarak incelemek yerine ML algoritmaları ile hızlı bir şekilde ve gerçek zamanlı olarak tanımlayabilmektedir. (böylece toplam giderlerden  5.7 milyon dolar tasarruf ettiği belirtiliyor).
 
