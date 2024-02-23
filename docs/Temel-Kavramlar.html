@@ -48,9 +48,10 @@ class: my-medium-font
 
 # Plan
 
-- Makine Öğrenmesi Problemi 
 
 - Öğrenme türleri: Gözetimli Öğrenme vs. Gözetimsiz Öğrenme
+
+- (Gözetimli) Makine Öğrenmesi Problemi  
 
 - Gözetimli Öğrenme: Regresyon problemleri 
 
@@ -61,9 +62,73 @@ class: my-medium-font
 - Sapma-Varyans ilişkisi
 
 
+
+---
+
+# Gözetimli vs. Gözetimsiz Öğrenme 
+
+- Gözetimli (supervised) öğrenme: Çıktı değişkeni `\(Y_i\)` gözlemleniyor. 
+
+- `\(Y_i\)` sürekli değerler alıyorsa: **regresyon** problemi. Örneğin, evlerin özniteliklerinden hareketle değerinin tahmin edilmesi, borsa endeksinin yarınki kapanış değerinin öngörülmesi, vb.
+
+- `\(Y_i\)` kategorik değişkense: **sınıflandırma** problemi. Örneğin, bir döviz kurunun yarınki hareketinin (aşağı ya da yukarı) öngörülmesi, bir kredi başvurusunun sınıflandırılması, vb. 
+
+- Gözetimsiz öğrenme: Verilerde `\(Y_i\)` yok ya da gözlenemiyor. Amaç özniteliklerden hareketle gözlemlerin öbeklenmesi ya da öznitelik boyutunun küçültülmesi olabilir. Örnek: müşterilerin özelliklerinden hareketle piyasa segmentasyonu. 
+
+---
+background-image: url("img/MLdata1.PNG")
+background-size: contain
+
+# Gözetimli Öğrenme: Gayrimenkul değer tahmini
+
+---
+background-image: url("img/MLdata2.PNG")
+background-size: contain
+
+# Gözetimli Öğrenme
+
+---
+background-image: url("img/MLdata3.PNG")
+background-size: contain
+
+# Gözetimli Öğrenme
+
+---
+background-image: url("img/MLdata4.PNG")
+background-size: contain
+
+# Gözetimli Öğrenme
+
+---
+background-image: url("img/MLdata5.PNG")
+background-size: contain
+
+# Gözetimli Öğrenme
+
+Modeli eğittikten (training/estimating) sonra yeni bir ev için fiyat kestirimi yapabiliriz.  
+
+---
+# Gözetimsiz Öğrenme
+
+- Gözetimsiz öğrenmede ise girdilere karşılık bir çıktı ya da etiket yoktur. 
+
+- Tüm değişkenler girdi olarak düşünülebilir.  
+
+- Gözetimsiz öğrenme problemleri: boyut küçültme, öbekleme/kümeleme 
+
+- Kümeleme problemlerinde amaç birbirine benzeyen homojen birimlerin yer aldığı gruplar oluşturmaktır. Örneğin, homojen tüketici grupları, birbirine benzer hasta grupları, benzer seçmen grupları gibi.  
+
+---
+background-image: url("img/MLdata6.PNG")
+background-size: contain
+
+# Gözetimsiz Öğrenme (Hedef ya da çıktı değişkeni yok) 
+
+
 ---
 # Makine Öğrenmesi
-Makine Öğrenmesi (ML) bir girdi değişkenleri kümesinden hareketle çıktının kestirilmesi (tahmini) için (istatistiksel) modeller geliştirir.
+
+Gözetimli Makine Öğrenmesi bir girdi değişkenleri kümesinden hareketle çıktının (hedef değişkenin) kestirilmesi (tahmini) için (istatistiksel) modeller geliştirir.
 
 **Genel çerçeve**: 
 
@@ -78,17 +143,6 @@ $$ Y_i = f(\mathbf{X}_i) + \epsilon_i, ~~~i=1,2,\ldots,n $$
 Burada `\(f(\mathbf{X}_i)\)` bilinmeyen bir fonksiyon, `\(\epsilon\)` gözlenemeyen bir 
 rassal hata terimidir.
 
----
-
-# Gözetimli vs. Gözetimsiz Öğrenme 
-
-- Gözetimli (supervised) öğrenme: Çıktı değişkeni `\(Y_i\)` gözlemleniyor. 
-
-- `\(Y_i\)` sürekli değerler alıyorsa: **regresyon** problemi. Örneğin, evlerin özniteliklerinden hareketle değerinin tahmin edilmesi, borsa endeksinin yarınki kapanış değerinin öngörülmesi, vb.
-
-- `\(Y_i\)` kategorik değişkense: **sınıflandırma** problemi. Örneğin, bir döviz kurunun yarınki hareketinin (aşağı ya da yukarı) öngörülmesi, bir kredi başvurusunun sınıflandırılması, vb. 
-
-- Gözetimsiz öğrenme: Verilerde `\(Y_i\)` yok ya da gözlenemiyor. Amaç özniteliklerden hareketle gözlemlerin öbeklenmesi ya da öznitelik boyutunun küçültülmesi olabilir. Örnek: müşterilerin özelliklerinden hareketle piyasa segmentasyonu. 
 
 ---
 
@@ -360,7 +414,7 @@ Dikey kesikli çizgi: en küçük test MSE değerini veren karmaşıklık düzey
 `$$\frac{1}{n} \sum_{i=1}^{n} I\left(y_{i} \neq \hat{y}_{i}\right)$$`
 Burada `\(I\left(\cdot\right)\)` `\(y_{i} \neq \hat{y}_{i}\)` ise 1, aksi durumda 0 değerini alan bir ikili değişkendir (indicator function). 
 
-- Aynı formülden hareketle `\((y_0, x_0)\)` gibi bir test verisinden hareketle test hata oranı hesaplanabilir. 
+- Aynı formülden hareketle `\((y_0, x_0)\)` gibi bir test verisi için test hata oranı hesaplanabilir. 
 
 ---
 
