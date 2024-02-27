@@ -30,6 +30,7 @@ code.r{
 ```{r setup, include=FALSE}
 # knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis')
 knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+Sys.setlocale("LC_ALL", locale = "turkish")
 ``` 
 
 <br/>
@@ -42,24 +43,32 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 
 ## `lm()` fonksiyonu
 
-Base R ile birlikte gelen `lm()` fonksiyonu ile regresyon modellerini tahmin edebilir ve kestirimleri hesaplayabiliriz. Örnek olarak ders kitabında incelediğimiz Boston ev fiyatları veri setini yükleyelim: 
+Base R ile birlikte gelen `lm()` fonksiyonu ile regresyon modellerini tahmin edebilir ve kestirimleri hesaplayabiliriz. Örnek olarak sağlık sigortası verilerini yükleyelim: 
 ```{r}
-library(MASS)
-library(ISLR)
-library(tidyverse)
-
-# Simple Linear Regression
-# Boston house data set
-names(Boston) 
-# see the explanation of the variables
-# ?Boston
+load("Data/sigorta.rda")
+head(sigorta)
+# değişken tanımları 
+# yas = bireyin yaşı 
+# cinsiyet = K=Kadın, E=Erkek
+# BMI = vücut kitle endeksi, ideal sınırlar 18.5 - 24.9 
+# cocuksay = çocuk sayısı 
+# sigara = sigara içiyor mu (evet/hayır)
+# bölge = yaşadığı bölge (güneybatı, güneydoğu, kuzeybatı, kuzeydoğu)
+# maliyet = sağlık sigortası primi (para birimi, TL)
 ```
 
-<br>
+Sağlık sigortası primi ile BMI arasındaki serpilme çizimini inceleyelim: 
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+# serpilme çizimi 
+sigorta |> ggplot(aes(x = BMI, y=maliyet)) + 
+  geom_point(alpha=0.5)
+```
 
-Medyan ev fiyatlarının (`medv`, 1000\$) düşük gelir (`lstat`) üzerine basit regresyonunu kuralım: 
+
+Sigorta maliyeti ile BMI arasında bir basit regresyon modeli tahmin edelim. Önce tüm verileri kullanacağız.  
 ```{r}
-reg1 <- lm(formula = medv ~ lstat, data=Boston) 
+reg1 <- lm(formula = maliyet ~ BMI, data = sigorta) 
 ```
 
 `R` regresyon çıktılarının yer aldığı `reg1` isimli bir liste oluşturdu. RStudio-Environment altında `reg1` nesnesine tıklayarak bu listenin içindekileri görebilirsiniz:
@@ -88,14 +97,16 @@ reg1$coefficients
 <br>
 
 Denklem formunda yazalım: 
-$$\widehat{medv} = 34.55 - 0.950~lstat$$
+$$\widehat{maliyet} = 1192.94 + 393.87~BMI$$
 
+Bu sonuca göre BMI'daki her bir birim artışa karşılık sigorta priminin yaklaşık olarak 393.87 TL artacağı tahmin edilmiştir. 
 
 Regresyon sonuçlarını özetlemek için çok sayıda alternatif araç geliştirilmiştir. Örneğin, `broom` paketinde yer alan `tidy()`, `glance()` ve `augment()` fonksiyonlarını kullanabilirsiniz:  
 ```{r, warning=FALSE}
 library(broom)
 tidy(reg1)
 ```
+
 ```{r} 
 glance(reg1)
 ```
@@ -116,54 +127,61 @@ confint(reg1)
 ```
 
 
-Verilmiş bir $x$ değerleri için (örneğimizde `lstat`=(5,10,15)) ortalama değer kestirimi: 
+Verilmiş bir $x$ değerleri için (örneğimizde `BMI`=(20,30,40)) ortalama değer kestirimi: 
 ```{r}
 # reg1 modeliyle kestirimler 
-predict(reg1, data.frame(lstat=(c(5,10,15))), interval="confidence")
+predict(reg1, data.frame(BMI=(c(20,30,40))), interval="confidence")
 ```
 
 Bir gözlem için kestirimler:  
 ```{r}
 # predictions from the model reg1 
 # for a single observation
-predict(reg1, data.frame(lstat=(c(5,10,15))), interval="prediction")
+predict(reg1, data.frame(BMI=(c(20,30,40))), interval="prediction")
 ```
 
 Dikkat edilirse kestirimler hem ortalama için hem de tek bir gözlem için aynıdır. Ancak tekil gözlem kestirimlerinin standart hatası, ortalama kestiriminin standart hatasına göre çok daha yüksektir. Bu nedenle güven aralığı daha geniştir. 
 
 Örneklem-içi uyum değerlerinin (fitted values) grafiği  
 ```{r}
-plot(Boston$lstat, Boston$medv) 
+plot(sigorta$BMI, sigorta$maliyet) 
 abline(reg1,lwd=3)
 ```
 
 Alternatif olarak: 
 ```{r}
-Boston1 <- Boston
-Boston1$yhat1 <- predict(reg1, Boston1)
-
-Boston1 %>% ggplot(aes(lstat, medv)) + 
-  geom_point() + 
-  geom_line(aes(lstat, yhat1, color="red")) +
+sigorta |> 
+  ggplot(aes(BMI, maliyet)) + 
+  geom_point(alpha=0.5) + 
+  geom_line(aes(BMI, predict(reg1, sigorta), color="red"), linewidth=1) +
   theme(legend.position = "none") 
 ```
 
 Ya da `broom` paketini kullanarak: 
 ```{r}
 augment(reg1) %>% 
-  ggplot(mapping = aes(x = lstat)) +
-  geom_point(mapping = aes(y = medv)) +
+  ggplot(mapping = aes(x = BMI)) +
+  geom_point(mapping = aes(y = maliyet)) +
   geom_line(mapping = aes(y = .fitted), color = "red")
 ```  
 
+
+## Kalıntı (Residual) Analizi
+
 Bu grafiklerden de görüldüğü gibi bu iki değişken arasında doğrusal olmayan bir ilişki mevcuttur. Tahmin edilen regresyon modeli bu ilişkiyi tam  yakalayamıyor. Bunu daha net görmek için kalıntıları oluşturup örneklem-içi tahmin edilen değerlere göre grafiğini çizelim: 
 ```{r}
-# Residuals vs Fitted values plot
-Boston1$resid1 <- residuals(reg1)
-
-Boston1 %>% ggplot(aes(yhat1, resid1)) + 
+# kalıntılar ve tahminler
+sigorta |> ggplot(aes(predict(reg1, sigorta), residuals(reg1))) + 
   geom_point() 
 ```
+
+Aynı grafik `broom::augment()` ile de çizilebilir: 
+```{r}
+augment(reg1) |> 
+  ggplot(aes(.fitted, .resid)) + 
+  geom_point()
+```
+
 
 
 Eğer iyi bir uyum olsaydı kalıntıların $0$ çevresinde rassal bir şekilde dağılması gerekirdi. Yukarıdaki şekildeyse böyle olmadığını görüyoruz.  
@@ -201,131 +219,222 @@ plot(reg_df1)
 <br>
 <br>
 
+## Logaritmik çıktı değişkeni 
+
+Bağımlı değişken ya da çıktı değişkeninin doğal logaritmasını kullanarak bir basit regresyon modeli tahmin edelim: 
+
+```{r}
+reg2 <- lm(log(maliyet) ~ BMI, data = sigorta)
+tidy(reg2)
+```
+
+Sonuçları denklem formunda yazarsak: 
+$$\widehat{log(maliyet)} = 8.49 + 0.02~BMI$$
+Bu sonuçlara göre BMI'daki her 1 birim artışa karşılık tahmin edilen sigorta maliyeti yaklaşık %2 artmaktadır. 
+```{r}
+augment(reg2) |> 
+  ggplot(aes(x = BMI)) +
+  geom_point(aes(y = `log(maliyet)`)) +
+  geom_line(aes(y = .fitted), color = "red")
+```  
+
+
+## İkili (kukla) değişken ile basit regresyon 
+
+Veri setinde sigara değişkeni bireyin sigara içip içmediğine ilişkin bilgi içeren bir kategorik değişkendir (R'da faktör değişkeni). 
+```{r}
+contrasts(sigorta$sigara)
+```
+Sigara içmeyenler için 1, içenler için 0 değerini alan bir binary değişken olarak düşünebiliriz. Bu değişkeni girdi olarak kullanarak bir regresyon modeli tahmin edelim: 
+
+```{r}
+reg3 <- lm(maliyet ~ sigara, data = sigorta)
+tidy(reg3)
+```
+
+Sigara içenler (evet grubu) baz ya da karşılaştırma grubu olarak düşünelibilr. Bu grup için tahmin edilen ortalama prim yaklaşık 32050 TL'dir. Sigara içmeyenlerin (hayır grubu) maliyeti ortalama 23616 TL daha düşüktür, yani yaklaşık 8434 TL'dir. 
+
+```{r}
+augment(reg3) |> 
+  ggplot(aes(x = sigara)) +
+  geom_point(aes(y = maliyet), alpha=0.1) +
+  geom_point(aes(y = .fitted), color = "red", size=3) +
+  scale_y_continuous(breaks = seq(0,60000,10000))
+``` 
+
+
+Bu grafikte iki grup için tahmin edilen maliyet değerleri kırmızı noktalarla gösterilmiştir. 
+
+Benzer şekilde cinsiyet ile bir basit regresyon kuralım: 
+```{r}
+reg4 <- lm(maliyet ~ cinsiyet, data = sigorta)
+tidy(reg4)
+```
+
+```{r}
+augment(reg4) |> 
+  ggplot(aes(x = cinsiyet)) +
+  geom_point(aes(y = maliyet), alpha=0.1) +
+  geom_point(aes(y = .fitted), color = "red", size=3) +
+  scale_y_continuous(breaks = seq(0,60000,10000))
+``` 
+
+Bu sonuçlara göre kadınların sigorta primi erkeklerden ortalamada 1387 TL daha düşüktür. 
+
 
 # Çok Değişkenli Doğrusal Regresyon 
 
-Boston veri setinde yer alan değişkenlerle bir ev fiyatı modeli oluşturalım. Veri setindeki tüm değişkenleri eklemek için aşağıdaki komutu kullanabiliriz: 
 ```{r}
-reg2 <- lm(medv ~ . , data = Boston)
-summary(reg2)
+reg5 <- lm(maliyet ~ BMI + yas + cocuksay, data = sigorta)
+summary(reg5)
 ```
 
-Açıklayıcı değişkenlerden birini, diyelim ki `age` değişkenini, dışlamak istersek: 
 ```{r}
-reg3 <- lm(medv ~ . -age, data = Boston)
-summary(reg3)
+tidy(reg5)
 ```
 
-`age` ve `indus` değişkenlerini birlikte dışlayalım: 
-```{r}
-reg4 <- lm(medv ~ . -age -indus, data = Boston)
-summary(reg4)
-```
 
-Bu model için diagnostik grafikler:  
-```{r}
-par(mfrow=c(2,2))
-plot(reg4)
-```
 
- 
 
 ## Etkileşim Değişkenleri 
 
-`lstat` ve `age` arasındaki etkileşimi (interaction) modele eklemek için: 
+BMI ile maliyet arasındaki serpilme çizimine sigara boyutunu katarak bakalım: 
 ```{r}
-reg5 <- lm(medv ~ lstat * age, data = Boston)
-summary(reg5)
+sigorta |> ggplot(aes(x = BMI, y=maliyet, color=sigara)) + 
+  geom_point(alpha=0.5)
+```
+
+
+Regresyon modeline BMI ve sigarayı ekleyerek tahmin edelim: 
+```{r}
+reg6 <- lm(maliyet ~ BMI + sigara, data = sigorta)
+summary(reg6)
+```
+```{r}
+augment(reg6) |> 
+  ggplot(aes(x = BMI)) +
+  geom_point(aes(y = maliyet), alpha=0.1) +
+  geom_line(aes(y = .fitted, col = sigara), linewidth=1) +
+  scale_y_continuous(breaks = seq(0,60000,10000))
+``` 
+
+Bu regresyon modelinde BMI ile maliyet arasındaki ilişkiyi sigara içenler ve içmeyenler için farklı sabit terimler ile tahmin ettik. Ancak eğim katsayısı iki grup için aynıdır. Eğer bu eğim katsayısının, yani BMI ile maliyet arasındaki ilişkinin, sigara içenler ve içmeyenler için farklı olduğunu düşünüyorsak bir etkileşim terimi ekleyebiliriz. Böylece sigara içen grupta BMI'nın etkisinin farklı olup olmadığını görebiliriz: 
+
+```{r}
+reg7 <- lm(maliyet ~ BMI*sigara , data = sigorta)
+tidy(reg7)
 ```
 
 Alternatif olarak: 
 ```{r}
-reg6 <- lm(medv ~ lstat + age + lstat:age, data = Boston)
-summary(reg6)
+reg8 <- lm(maliyet ~ BMI + sigara + BMI:sigara, data = sigorta)
+summary(reg8)
 ```
 
-## Doğrusal olmayan dönüştürmeler 
-
-Modele değişkenlerin logaritma, kare, küp, ters, kare kök vb doğrusal olmayan dönüştürmelerini eklemek çok kolaydır. Örneğin,  
 ```{r}
-reg7 <- lm(medv ~ lstat + I(lstat^2), data = Boston)
-summary(reg7)
-```
+augment(reg8) |> 
+  ggplot(aes(x = BMI)) +
+  geom_point(aes(y = maliyet), alpha=0.1) +
+  geom_line(aes(y = .fitted, col = sigara), linewidth=1) +
+  scale_y_continuous(breaks = seq(0,60000,10000))
+``` 
 
-Karesel terim istatistik bakımından anlamlıdır. Karesel modeli doğrusal modelle karşılaştırmak için `anova` fonksiyonunu kullanabiliriz:  
+
+Sigara içmeyenlerin eğim katsayısı içenlere göre daha düşüktür (mavi). Modeli denklem formunda yazarak bunu daha açık bir şekilde görebiliriz: 
+
+$$\widehat{maliyet} = -13187 + 1473~BMI+19066~ Sigara -1390~BMI\times Sigara$$
+Burada Sigara = 1 sigara içmeyenleri (Hayır), 0 ise içenleri göstermektedir. Sigara içmeyenler için tahmin edilen maliyet: 
+$$\widehat{maliyet} = -13187 + 1473~BMI+19066 -1390~BMI$$
+$$\widehat{maliyet} = 5879 + 83~BMI$$
+Sigara içenler için ise 
+$$\widehat{maliyet} = -13187 + 1473~BMI$$
+olur. Özetlersek sigara içenler grubunda BMI'daki bir birim artışa karşılık tahmin edilen ortalama maliyet 1473 TL artmaktadır (kırmızı). Sigara içmeyenlerde ise bu artış yaklaşık olarak 83 TL'dir. 
+
+Faktör ya da kategorik değişkenler doğrudan R `lm()` fonksiyonu içinde kullanılabilir. Alternatif olarak bu değişkenleri 1/0 nümerik değişkenler olarak tanımlayarak da kullanabiliriz.
 ```{r}
-anova(reg1, reg7)
+attributes(sigorta$sigara)
+```
+```{r}
+# sigorta |> mutate(sig=as.numeric(as.numeric(sigara)==1))
+# faktör değişkenini binary 1/0 değişkenine dönüştürme: 
+sigorta <- sigorta |>
+  mutate(sig = case_when(sigara == "evet"  ~ 1,
+                         sigara == "hayır" ~ 0)
+  )
 ```
 
-`reg1` modeli `reg7` modeli içinde yuvalanmıştır (nested). Yukarıdaki ANOVA tablosu ile standart F testi yapmış olduk. Sonuca göre ikinci model (reg7) tercih edilir. 
+Yeni oluşturduğumuz sig değişkeni sigara içenler için 1, içmeyenler için ise 0 değerini almaktadır. Bu değişkeni kullanarak etkileşim modelini tahmin edelim: 
+```{r}
+reg9 <- lm(maliyet ~ BMI + sig + BMI:sig, data = sigorta)
+summary(reg9)
+```
+
+$$\widehat{maliyet} = 5879 + 83~BMI - 19066~ sig +1390~BMI\times sig$$
+Görüldüğü gibi sigara içenler için BMI ile maliyet arasındaki eğim katsayısı 1390+83=1473 TL olarak tahmin edilmiştir. 
+
+
+## Çoklu sigorta maliyeti modeli
+
+Modele diğer değişkenleri de ekleyelim: 
+```{r}
+reg10 <- lm(maliyet ~ BMI + sigara + BMI:sigara + cinsiyet + yas + cocuksay + bolge, 
+            data = sigorta)
+summary(reg10)
+```
+Düzeltilmiş Rkare (Adjusted R-squared) yaklaşık %84 olarak bulundu. Sadece BMI ve sigara etkileşim modeline göre modelin açıklama gücünde önemli bir artış görülüyor.Modelleri karşılaştırmak için `anova` fonksiyonunu kullanabiliriz:  
+```{r}
+anova(reg9, reg10)
+```
+
+`reg9` modeli `reg10` modeli içinde yuvalanmıştır (nested). Yukarıdaki ANOVA tablosu ile standart F testi yapmış olduk. Sonuca göre ikinci model (reg10) tercih edilir. 
 
 Bu modelin kalıntılarını tekrar inceleyelim:  
 ```{r}
 par(mfrow=c(2,2))
-plot(reg7)
+plot(reg10)
 ```
 
-
-Yüksek dereceden polinom terimlerini modele eklemek için `poly()` fonksiyonunu kullanabiliriz. Örneğin, `lstat` değişkeninin 5. dereceden polinomu: 
-```{r}
-reg8 <- lm(medv ~ poly(lstat,5), data = Boston)
-summary(reg8)
-```
-
-## Nitel Değişkenler
-
-Nitel ya da kukla değişkenleri modele kolayca ekleyebiliriz. Örnek olarak ISLR'daki Carseats veri setinden hareketle bir satış modeli kuralım: 
-```{r}
-library(ISLR)
-names(Carseats)
-fit1 <- lm(Sales~ . + Income:Advertising + Price:Age, data=Carseats)
-summary(fit1)
-```
-
-`ShelveLoc` ürünün mağazada raflardaki yerinin kalitesine ilişkin bir kategorik değişkendir. Kötü, orta, ve iyi olmak üzere (bad, medium, good) 3 gruba sahiptir. Eğer bir faktör değişkeni olarak tanımlanmışsa, R otomatik olarak kukla değişkenleri yaratır ve modele ekler. Gruplardan biri baz grup olarak seçilir (modelden dışlanır). 
-```{r}
-contrasts(Carseats$ShelveLoc)
-```
 
 # Eğitim ve Test Verilerinde Performans Karşılaştırması
 
-Boston veri setini kullanarak doğrusal ve karesel modellerin kestirim performanslarını karşılaştıralım. Öncelikle verileri rassal olarak eğitim (training) ve test olmak üzere iki parçaya ayırmamız gerekir. Bu amaçla `sample()` fonksiyonunu kullanabiliriz:  
+Modellerin tahmin performansını karşılaştırmak için öncelikle verileri rassal olarak eğitim (training) ve test olmak üzere iki parçaya ayırmamız gerekir. Bu amaçla `sample()` fonksiyonunu kullanabiliriz:  
 ```{r}
 set.seed(1)
-train <- sample(506, 253)
+train <- sample(1338, 1000)
 ```
 
-Her seferinde aynı sonucu elde etmek için en başta `set.seed()` komutunu da çalıştırmamız gerekir. Aksi takdirde sonuçlar farklılaşacaktır. Veri setinde $n=506$ gözlem vardır. Bunun yarısı rassal olarak modelin eğitiminde diğer yarısı ise performans karşılaştırmasında kullanılacaktır. 
+Her seferinde aynı sonucu elde etmek için en başta `set.seed()` komutunu da çalıştırmamız gerekir. Aksi takdirde sonuçlar farklılaşacaktır. Veri setinde $n=1338$ gözlem vardır. Bunların içinden 1000 gözlemi rassal olarak modelin eğitiminde kalanını ise performans karşılaştırmasında kullanacağız. 
 
 Yukarıda `train` vektörü eğitim setine seçilen gözlemlerin sıra numaralarını içermektedir. Veri setlerini açık olarak belirlemek için: 
 ```{r}
-train_Boston <- Boston[train,]
-test_Boston <- Boston[-train,]
+train_sigorta <- sigorta[train,]
+test_sigorta <- sigorta[-train,]
 ```
 
 Burada `-train` eğitim veri setinde olmayan gözlemleri seçer. Şimdi eğitim veri setiyle modelleri tahmin edebiliriz:  
 ```{r}
-lfit <- lm(medv ~ lstat, data = train_Boston)
-qfit <- lm(medv ~ lstat + I(lstat^2), data = train_Boston) 
+fit1 <- lm(maliyet ~ BMI + sig + BMI:sig, data = train_sigorta)
+fit2 <- lm(maliyet ~ BMI + sigara + BMI:sigara + cinsiyet + 
+             yas + cocuksay + bolge, data = train_sigorta) 
 ```
 
 Şimdi kestirimleri sadece test verileriyle yaparak her iki model için Ortalama Hata Karesini (Mean Squared Error - MSE) hesaplayalım: 
 ```{r}
-lin_predict <- predict(lfit, test_Boston)
-lin_error <- test_Boston$medv - lin_predict
-MSE_lfit <- mean(lin_error^2)
-MSE_lfit
+fit1_predict <- predict(fit1, test_sigorta)
+fit1_error <- test_sigorta$maliyet - fit1_predict
+MSE_fit1 <- mean(fit1_error^2)
+MSE_fit1
 ```
 
-Benzer şekilde karesel model için: 
+Benzer şekilde diğer model için: 
 ```{r}
-qu_predict <- predict(qfit, test_Boston)
-qu_error <- test_Boston$medv - qu_predict
-MSE_qfit <- mean(qu_error^2)
-MSE_qfit
+fit2_predict <- predict(fit2, test_sigorta)
+fit2_error <- test_sigorta$maliyet - fit2_predict
+MSE_fit2 <- mean(fit2_error^2)
+MSE_fit2
 ```
 
-Bu sonuçlara göre karesel modelin kestirim performansı daha iyidir.  
+Bu sonuçlara göre daha büyük modelin kestirim performansı daha iyidir.  
 
 # Sapma-Varyans Ödünümü Üzerine
 
