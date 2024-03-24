@@ -4,7 +4,7 @@ subtitle: Makine Öğrenmesi (MP İktisat TYL)
 author: 
   name: "Prof. Dr. Hüseyin Taştan"
   affiliation: "Yıldız Teknik Üniversitesi"
-date: "Haziran 2021"
+date: ""
 output:
   html_document: 
     number_sections: true 
@@ -30,6 +30,7 @@ code.r{
 ```{r setup, include=FALSE}
 # knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis')
 knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+Sys.setlocale("LC_ALL", locale = "turkish")
 ``` 
 
 <br/>
@@ -61,10 +62,22 @@ Smarket %>%
   geom_line()
 ```
 
-Kestirim sorusu: Geçmiş bilgiden hareketle piyasanın bugünkü yönünü (up ya da down) tahmin edebilir miyiz?
+
+```{r}
+Smarket |> 
+  ggplot(aes(Lag1, Volume, color = Direction)) + 
+  geom_point(alpha=0.5)
+```
+
+
+Kestirim sorusu: Geçmiş bilgiden hareketle piyasanın bugünkü yönünü (up ya da down) tahmin edebilir miyiz? (sınıflandırabilir miyiz?)
 ```{r}
 n <- length(Smarket$Direction)
 table(Smarket$Direction)/n
+```
+
+
+```{r}
 Smarket %>%  
   ggplot(aes(x=Today)) + 
   geom_histogram(color = "darkblue", fill = "lightblue")
@@ -72,38 +85,69 @@ Smarket %>%
 
 ##  `glm()` fonksiyonu
 
-Lojistik regresyon modeli tahmin etmek için `glm()` fonksiyonunu `family = binomial` opsiyonu ile birlikte kullanabiliriz:
+Lojistik regresyon modelini tahmin etmek için `glm()` fonksiyonunu `family = binomial` opsiyonu ile birlikte kullanabiliriz:
 ```{r}
 # Logistic regression 
-glm.fit <- glm(Direction ~ Lag1 + Lag2 + Lag3 +
-                 Lag4 + Lag5 + Volume, data = Smarket, family = binomial)
-summary(glm.fit) 
+glmfit <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, 
+               data = Smarket, 
+               family = binomial)
+summary(glmfit) 
 ```
 
 Yukarıdaki modelde tüm değişkenleri (5 gecikme ve piyasa hacmi) modele ekledik. 
 Şimdi piyasanın yönünü `predict()` fonksiyonunu kullanarak kestirebiliriz: 
 ```{r}
-glm.probs <- predict(glm.fit, type = "response")
-glm.probs[1:10] 
+glm_probs <- predict(glmfit, 
+                     type = "response") # response = olasılıkları tahmin eder
+# ilk 10 olasılığı yazdır:
+glm_probs[1:10] 
 ```
 
-Yukarıdaki çıktıda ilk 10 gözleme ilişkin kestirim değerlerini (koşullu olasılık tahminlerini) yazdırdık. Bu koşullu olasılık tahminlerinin ait olduğu sınıfları görmek için `contrasts()` fonksiyonunu kullanabiliriz: 
+Yukarıdaki çıktıda ilk 10 gözleme ilişkin kestirim değerlerini (koşullu olasılık tahminlerini) görüyoruz. Bu koşullu olasılık tahminlerinin ait olduğu sınıfları görmek için `contrasts()` fonksiyonunu kullanabiliriz: 
 
 ```{r}
 contrasts(Smarket$Direction)
 ```
 
-Görüldüğü gibi kukla (dummy) değişken Up sınıfı için 1 Down için 0 değerini almaktadır. 
+Görüldüğü gibi kukla (dummy) değişken Up sınıfı için 1 Down için 0 değerini almaktadır. (positive class = 1)
 
 Koşullu olasılıkları tahmin ettik. Ancak asıl amacımız sınıflandırma yapmaktı. Yani bugünkü piyasanın yönünü sınıflandırmaktı. Bunun için koşullu olasılıkları ikili kestirimlere (yukarı, aşağı) dönüştürmemiz gerekir. Derste gördüğümüz gibi 0.5 değerini aşan koşullu olasılıklar için Up, 0.5'den küçük değerler için Down kestirimi yapacağız: 
+
 ```{r}
 # tüm elemanları "Down" olan bir n-vektör yarat
-glm.pred <- rep("Down", n)
+glm_pred <- rep("Down", n)
 # 0.5 üzeri olasılıkları "Up" olarak sınıfla
-glm.pred[glm.probs>.5] = "Up"
-# kestirim ile gerçek çapraz tablo
-table(glm.pred, Smarket$Direction)
+glm_pred[glm_probs > 0.5] = "Up"
 ```
+
+
+```{r}
+# gerçek yön ve tahmin edilen yön bilgisini içeren bir tibble
+df <- tibble(piyasa_yon = Smarket$Direction, 
+             tahmin_yon = factor(glm_pred)) |> 
+             mutate(hata = piyasa_yon != tahmin_yon, 
+                    hata_num = as.numeric(hata)) 
+head(df)
+```
+
+
+```{r}
+# hatalı sınıflandırılan gün sayısı
+sum(df$hata_num)
+```
+```{r}
+table(df$hata)
+```
+
+
+```{r}
+# kestirim ile gerçek çapraz tablo
+table(glm_pred, Smarket$Direction)
+```
+```{r}
+table(df$tahmin_yon, df$piyasa_yon)
+```
+
 
 Modelce tahmin edilen yön ile gerçek yön arasındaki sınıflama performansını özetleyen hata matrisini (confusion matrix) de elde ettik. Buna göre ana köşegen doğru sınıflanan gözlem sayılarını, köşegen dışı elemanlar ise yanlış sınıflama sayılarını göstermektedir. Sonuçlara göre lojistik regresyon modeli 145 gün Down, 507 günü ise Up olarak doğru sınıflandırmıştır (toplam doğru sınıflanan gözlem sayısı 652). Doğru sınıflama başarı oranı ya da doğruluk oranı (accuracy rate) kolayca hesaplanabilir: 
 ```{r}
@@ -112,10 +156,11 @@ Modelce tahmin edilen yön ile gerçek yön arasındaki sınıflama performansı
 
 ya da 
 ```{r}
-mean(glm.pred==Smarket$Direction)
+mean(glm_pred == Smarket$Direction)
 ```
 
-Modelin doğruluk oranı yaklaşık %52.2'dir. Eğitim seti hata oranı ise 100-52.2 = %47.8'dir. 
+Modelin doğruluk oranı (accuracy rate) yaklaşık %52.2'dir. Eğitim kümesinde hata oranı ise 100-52.2 = %47.8'dir. 
+
 Bu sonuçlara göre modelin başarısı yazı-tura ile tahmin yapmaktan biraz daha iyidir. Başka bir açıdan şöyle de bakılabilir: piyasanın hep yukarı yönlü hareket edeceğini öngörsek başarı oranımız kaç olurdu? Verilerden bunun yaklaşık %51.84 (= 100*648/1250) olduğunu görüyoruz.  
 
 Ancak model performansını daha iyi değerlendirmek için kestirim hata oranını test veri setinde (verilerin eğitimde kullanılmayan kısmı) hesaplamamız gerekir. 
@@ -124,9 +169,9 @@ Sınıflandırma hata matrisini hesaplamanın bir çok yolu vardır. Bunlardan b
 ```{r}
 library(caret) 
 # 
-glm.pred <- as.factor(glm.pred)
+glm_pred <- as.factor(glm_pred)
 # Positive grup kuklanın = 1 değerini aldığı gruptur
-confusionMatrix(glm.pred, Smarket$Direction, positive = "Up")
+confusionMatrix(glm_pred, Smarket$Direction, positive = "Up")
 ```
 
 `confusionMatrix()` fonksiyonu hata matrisinin yanı sıra çok sayıda istatistik hesaplamaktadır. Ayrıca duyarlılık (sensitivity) ve belirlilik (specificity) gibi çeşitli ölçüleri de raporlamaktadır. Piyasa yön sınıflamasında duyarlılık gerçek yukarı yönlü (Up) sınıflandırılan hareketlerin oranıdır, yani 507/(141+507)= 0.7824, %78.24. Belirlilik ise aşağı yönlü hareketler içinde doğru sınıflananların oranıdır: 145/(145+457)= 0.2409, %24.09. 
@@ -136,9 +181,10 @@ confusionMatrix(glm.pred, Smarket$Direction, positive = "Up")
 Daha önce belirttiğimiz gibi lojistik model 457+141 = 598 günü yanlış sınıflamıştır (**eğitim hata oranı** =  % 47.8). Daha gerçekçi bir hata oranı hesaplamak için verilerin tahminde kullanılmayan kısmında, yani test verilerinde, hatalı sınıflama oranını hesaplamak gerekir.  
 
 Bu amaçla, veri setinin 2001-2004 yıllarına ait kısmını eğitim veri seti, 2005 yılını ise test veri seti olarak ayıracağız. 
+
 ```{r}
 # Eğitim veri seti indikatörü yarat
-train <- (Smarket$Year<2005)
+train <- (Smarket$Year < 2005)
 # test verileri 
 Smarket.2005 <- Smarket[!train,]
 dim(Smarket.2005)
@@ -149,8 +195,10 @@ Direction.2005 <- Smarket$Direction[!train]
 Yukarıdaki kod parçasında `train`  `TRUE` veya `FALSE` elemanları olan bir mantıksal vektördür. Şimdi modelimizi eğitim veri setiyle tekrar tahmin ediyoruz: 
 ```{r}
 # modeli eğitim verisiyle tahmin et 
-glm.fit <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = Smarket,
-               family = binomial, subset = train)
+glm.fit <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, 
+               data = Smarket,
+               family = binomial, 
+               subset = train) # verilerin alt kümesi = eğitim verileri
 ```
 
 Yukarıda `glm()` fonksiyonu içinde eğitim setini gösteren `subset = train` opsiyonunu kullandığımıza dikkat ediniz. 
@@ -164,8 +212,8 @@ glm.probs <- predict(glm.fit, Smarket.2005, type = "response")
 Model ne kadar başarılı? Bunu sadece test verileri içinde ölçeceğiz:  
 ```{r}
 glm.pred <- rep("Down", 252)
-# classify probs>0.5 as up
-glm.pred[glm.probs>.5] <- "Up"
+# 0.5 üzerini UP olarak sınıfla: 
+glm.pred[glm.probs > 0.5] <- "Up"
 # table: 
 table(glm.pred,Direction.2005)
 ```
@@ -173,7 +221,10 @@ table(glm.pred,Direction.2005)
 ```{r}
 # % correctly predicted
 mean(glm.pred == Direction.2005)
+```
 
+
+```{r}
 # % incorrect -- error rate
 mean(glm.pred != Direction.2005)
 ```
@@ -184,12 +235,26 @@ Test hata oranı yaklaşık %52 olarak tahmin edildi. Açıktır ki bu tesadüfi
 <br/>
 
 Yukarıda tahmin ettiğimiz model tüm değişkenleri içeriyordu. Şimdi en yakın 2 gecikmeyi içeren daha küçük bir model tahmin edelim:  
+
 ```{r}
-glm.fit <- glm(Direction ~ Lag1 + Lag2, data=Smarket, family=binomial, subset=train)
-glm.probs <- predict(glm.fit, Smarket.2005, type="response")
+glm.fit <- glm(Direction ~ Lag1 + Lag2, 
+               data = Smarket, 
+               family = binomial, 
+               subset = train)
+# olasılık kestirimleri
+glm.probs <- predict(glm.fit, 
+                     Smarket.2005, 
+                     type="response")
+# sınıflandırma
 glm.pred <- rep("Down",252)
-glm.pred[glm.probs>.5] <- "Up"
+glm.pred[glm.probs > 0.5] <- "Up"
+# tablo 
 table(glm.pred, Direction.2005)
+```
+
+
+```{r}
+# doğru sınıflandırılan gözlemlerin oranı
 mean(glm.pred == Direction.2005) 
 ```
 
@@ -199,7 +264,9 @@ Gözlemlerin %56'sı doğru olarak sınıflandırıldı. Ufak bir artış görü
 
 Belirli değerler için öngörü hesaplamak için örnek komut: 
 ```{r}
-predict(glm.fit, newdata = data.frame(Lag1=c(1.2,1.5),Lag2=c(1.1,-0.8)), type="response")
+predict(glm.fit, 
+        newdata = data.frame(Lag1=c(1.2,1.5),Lag2=c(1.1,-0.8)), 
+        type="response")
 ```
 
 # Lineer Diskriminant Analizi (LDA) 
@@ -211,7 +278,9 @@ Derste gördüğümüz gibi doğrusal diskriminant analizi kategorik tepki deği
 Yukarıda lojistik regresyonda  kullandığımız örneği LDA için tekrarlayalım. `R`'da LDA tahmini için `lda()` fonksiyonunu kullanabiliriz. Modelde sadece iki gecikmeyi kullanacağız. Eğitim verisi için tahmin sonuçları:  
 ```{r}
 library(MASS)
-lda.fit <- lda(Direction ~ Lag1 + Lag2, data = Smarket, subset = train)
+lda.fit <- lda(Direction ~ Lag1 + Lag2, 
+               data = Smarket, 
+               subset = train)
 lda.fit
 plot(lda.fit)
 ```
@@ -249,7 +318,9 @@ Bu sonuç lojistik regresyon ile aynıdır.
 
 Karesel diskriminant tahmini için `qda()` fonksiyonu kullanılabilir: 
 ```{r}
-qda.fit <- qda(Direction ~ Lag1 + Lag2, data = Smarket, subset = train)
+qda.fit <- qda(Direction ~ Lag1 + Lag2, 
+               data = Smarket, 
+               subset = train)
 qda.fit
 ```
 
@@ -337,7 +408,9 @@ summary(Default)
 Lojistik regresyon tahmini
 ```{r}
 # Logistic regression 
-logit.default <- glm(default ~ balance + income + student, data=Default, family=binomial)
+logit.default <- glm(default ~ balance + income + student, 
+                     data=Default, 
+                     family=binomial)
 summary(logit.default ) 
 ```
 
