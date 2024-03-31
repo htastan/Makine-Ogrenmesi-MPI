@@ -120,9 +120,127 @@ lm.fit3 <- lm(mpg ~ poly(horsepower,3), data = Auto, subset = train)
 mean((Auto$mpg-predict(lm.fit3,Auto))[-train]^2)
 ```
 
+Geçerleme yaklaşımı ile elde edilen test MSE değeri yüksek değişkenliğe sahiptir. Bunu görmek için Auto verilerini kullanarak çok sayıda tekrarlayalım: 
+```{r message=FALSE, warning=FALSE}
+# replicate the validation set approach many times using Auto data 
+library(tidyverse)
+library(ISLR2)
+
+dmax = 10 # max degree of the polynomial, the flexibility
+nrep = 20 # number of replications
+#
+set.seed(1)
+# create an empty tibble
+mse <- tibble(rep = numeric(), d = numeric(), testmse = numeric())
+
+for (i in 1:nrep){
+  train <- sample(392,196)   # train-test splits
+  train_auto <- Auto[train,] # train data 
+  test_auto <- Auto[-train,] # test data 
+  # loop over flexibility
+  for (j in 1:dmax){
+    lmfit <- lm(mpg ~ poly(horsepower,j), data = train_auto)
+    test_predict <- predict(lmfit, test_auto)
+    test_error <- test_auto$mpg - test_predict
+    MSE = mean(test_error^2)
+    mse <- add_row(mse, rep=i, d=j, testmse = MSE ) 
+  }
+}
+
+mse |> 
+  ggplot(aes(d,testmse,color=factor(rep))) + 
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks=c(1:dmax)) +
+  labs(x="Degree of the polynomial", 
+       y="Test MSE") +
+  theme(legend.position="none")
+```
+
+
+Bu grafikten görüleceği gibi, geçerleme kümesi yaklaşımı ile elde edilen test MSE tahminleri yüksek varyansa sahiptir. Alternatif olarak çapraz geçerleme yaklaşımları kullanılabilir.  
+
+
 # Biri-Hariç Çapraz Geçerleme (LOOCV)
 
-Biri-hariç çapraz geçerlemede (LOOCV - Leave-one-out Cross Validation) modeli bir gözlemi dışarıda bırakarak tahmin ediyoruz. Dışarıda bırakılan gözlemi kestirim yapmak için kullanıyoruz. Bunun için `boot` paketindeki `cv.glm()` fonksiyonunu `glm()` ile birlikte kullanabiliriz. 
+Biri-hariç çapraz geçerlemede (LOOCV - Leave-one-out Cross Validation) modeli bir gözlemi dışarıda bırakarak tahmin ediyoruz. Dışarıda bırakılan gözlemi kestirim yapmak ve test hatasını tahmin etmek için kullanıyoruz. 
+
+Örneğin Auto veri kümesini kullanarak mpg için bir lineer regresyon modeli kuralım ve LOOCV yöntemiyle test hatasını (MSE) tahmin edelim: 
+```{r}
+data(Auto)
+n = nrow(Auto)
+loocv = numeric(n) # test MSE için sıfır vektörü oluştur, döngü içinde dolduracağız
+for (i in 1:n){
+  testdata <- Auto[i,]
+  traindata <- Auto[-i,]
+  lmfit <- lm(mpg ~ poly(horsepower,1), # degree = 1
+              data = traindata)
+    test_predict <- predict(lmfit, testdata)
+    test_error <- testdata$mpg - test_predict
+    loocv[i] <- mean(test_error^2)
+}
+MSE_LOOCV_degree1 <- mean(loocv)
+MSE_LOOCV_degree1
+```
+
+Polinom derecesi d=1 (yani mpg'nin horsepower üzerine doğrusal regresyonu) için LOOCV MSE değeri 24.23151 olarak tahmin edildi. 
+
+Karesel model, d=2: 
+```{r}
+data(Auto)
+n = nrow(Auto)
+loocv = numeric(n) #  
+for (i in 1:n){
+  testdata <- Auto[i,]
+  traindata <- Auto[-i,]
+  lmfit <- lm(mpg ~ poly(horsepower,2),  # degree 2
+              data = traindata)
+    test_predict <- predict(lmfit, testdata)
+    test_error <- testdata$mpg - test_predict
+    loocv[i] <- mean(test_error^2)
+}
+MSE_LOOCV_degree2 <- mean(loocv)
+MSE_LOOCV_degree2
+```
+
+Polinom derecesi için bir döngü içinde LOOCV MSE hesaplamaları: 
+```{r}
+data(Auto)
+n = nrow(Auto)
+loocv = numeric(n) #  
+dmax = 10
+MSE_LOOCV = numeric(dmax)
+for (d in 1:dmax){
+for (i in 1:n){
+  testdata <- Auto[i,]
+  traindata <- Auto[-i,]
+  lmfit <- lm(mpg ~ poly(horsepower,d),  # degree d
+              data = traindata)
+    test_predict <- predict(lmfit, testdata)
+    test_error <- testdata$mpg - test_predict
+    loocv[i] <- mean(test_error^2)
+}
+MSE_LOOCV[d] <- mean(loocv) 
+}
+MSE_LOOCV
+```
+
+Grafiğini çiz: 
+```{r}
+tibble(MSE_LOOCV) |> 
+  ggplot(aes(1:10,MSE_LOOCV)) + 
+  geom_line() +
+  geom_point() + 
+  scale_x_continuous(breaks=c(1:dmax)) +
+  labs(x="Degree of the polynomial", 
+       y="Test MSE", 
+       title="LOOCV test error") 
+  
+```
+
+
+
+Çapraz geçerleme için `boot` paketindeki `cv.glm()` fonksiyonunu `glm()` ile birlikte kullanabiliriz. 
 
 `glm()` fonksiyonu `lm()`'e benzer:  
 ```{r}
@@ -164,7 +282,37 @@ plot(cv.error, type = "b")
 
 # $k$-katlı Çapraz Geçerleme
 
-Bunun için `cv.glm()` fonksiyonunu kullanabiliriz. Örneğin, $k=10$ için doğrusal modelde çapraz geçerleme test hatası: 
+$k$-katlı Çapraz Geçerlemede eğitim verileri kendi içinde $k$ gruba ayrılır. Her bir grup sırasıyla geçerleme kümesi görevi görür. Gruplardan biri geçerleme (test) işlevi için kullanılırken diğer $k-1$ grup modelin eğitiminde kullanılır. 
+
+Örnek: Auto veri seti ile mpg kestirimi, lineer model (d=1), k=5 katlı çapraz geçerleme
+```{r}
+data(Auto)
+n = nrow(Auto)
+k = 5
+kfoldcv = numeric(k) #  
+# create a loop over k
+set.seed(17)
+folds <- sample(1:k, n, replace=TRUE)
+for (i in 1:k){
+  testdata <- Auto[folds == i,]
+  traindata <- Auto[folds != i,]
+  lmfit <- lm(mpg ~ poly(horsepower,1), # degree = 1
+              data = traindata)
+    test_predict <- predict(lmfit, testdata)
+    test_error <- testdata$mpg - test_predict
+    kfoldcv[i] <- mean(test_error^2)
+}
+kfoldcv
+MSE_kfoldcv_degree1 <- mean(kfoldcv)
+MSE_kfoldcv_degree1
+```
+$k=5$ katlı çapraz geçerleme kullanarak tahmin ettiğimiz test MSE değeri 23.87 oldu. 
+
+Tipik olarak uygulamada çapraz geçerlemenin kullanım amaçlarından biri modelin/algoritmanın karmaşıklık/esneklik düzeyinin belirlenmesidir. Burada amaç aşırı uyumdan kaçınmak ve optimal esneklik düzeyini belirlemektir. Örneğin mpg tahmininde kullandığımız polinom modellerin derecesi karmaşıklık düzeyini belirler (d arttıkça modelin esnekliği/karmaşıklığı artmaktadır). 
+
+Çarpraz geçerleme ile modelin karmaşıklığını belirlemek istersek her bir parametre değeri için (örneğin polinom derecesi) test MSE değerlerini hesaplamamız gerekir. Yani yukarıdaki hesaplamaları d için bir döngü kurarak tekrar yapabiliriz. 
+
+Alternatif olarak pratikte `boot::cv.glm()` fonksiyonunu kullanabiliriz. Örneğin, $k=10$ için doğrusal modelde çapraz geçerleme test hatası: 
 ```{r}
 set.seed(12345)
 glm.fit <- glm(mpg ~ horsepower, data = Auto)
@@ -172,10 +320,10 @@ cv_lin_error_10 <- cv.glm(Auto, glm.fit, K=10)$delta[1]
 cv_lin_error_10
 ```
 
-5. dereceye kadar polinom değerler için 10-katlı çapraz geçerleme test hata tahminleri: 
+5. dereceye kadar polinom modeller için 10-katlı çapraz geçerleme test hata tahminleri: 
 ```{r}
 # ISLR aynı sonuçlar için seed değeri: 
-set.seed(17)
+set.seed(234)
 cv.error.10 <- rep(0,5)
 for (i in 1:5){
   glm.fit <- glm(mpg ~ poly(horsepower,i), data = Auto)
@@ -291,6 +439,283 @@ OLS sonuçları ile kıyaslayınız:
 ```{r}
 summary(lm(mpg~horsepower+I(horsepower^2),data=Auto))$coef
 ```
+
+
+
+# Tidymodels Paketi
+
+
+[Tidymodels](https://www.tidymodels.org/) makine öğrenmesi modellemesi için tasarlanmış bir `R` paketler topluluğudur. Tidymodels Tidyverse prensiplerini kullanır ve bu paketler ile uyumlu çalışır. Tidymodels içindeki paketler şunlardır: 
+
+- `rsample`: verilerin yeniden örneklenmesi  
+
+- `recipes`: önemli özelliklerin/değişkenlerin belirlenmesi (feature engineering) 
+
+- `parsnip`: modelin tahmini/eğitimi 
+
+- `tune`, `dials`: modelin ayarlanma parametrelerinin seçimi (örneğin polinom derecesi)
+
+- `yardstick`: modelin performansının değerlendirilmesi
+
+![](img/tidymodels1.PNG) 
+
+Tidymodels paketine giriş ve başlangıç için bkz: [https://www.tidymodels.org/start/](https://www.tidymodels.org/start/)
+
+
+```{r}
+# first install tidymodels 
+# needs to be done once
+# install.packages("tidymodels")
+```
+
+Örnek: Tidymodels ile `Auto` veri kümesindeki mpg için bir polinom regresyon modeli kuralım. 
+
+İlk adım veri kümesinin eğitim ve test olarak ayrılmasıdır. Burada elimizde ayrıca bir test kümesinin olmadığını varsayıyoruz (örneğin kaggle.com'daki yarışmalarda test verileri ayrıca verilir). Eğitim-test ayrımını yaptıktan sonra modelin ayarlanma parametresini (yani polinom derecesini) sadece eğitim kümesini kullanarak bulmamız gerekir. Bunun için eğitim verilerine çapraz geçerleme uygulayabiliriz. 
+
+Eğitim-test ayrımını yapmak için `{rsample}` paketinde yer alan `initial_split()` fonksiyonunu kullanabiliriz. Önceki kısımlarda olduğu gibi `mpg`'yi `horsepower` ile tahmin etmeye çalışacağız. Verileri %75'ini eğitim kalan %25'ini test için ayıracağız. 
+
+```{r message=FALSE, warning=FALSE}
+library(tidymodels)
+library(ISLR)
+set.seed(1)
+auto_split <- initial_split(Auto, 
+                           prop = 0.75, 
+                           strata = mpg)
+```
+
+Yukarıdak kod parçasındaki `strata` girdisi eğitim ve test verilerinin mpg'nin dağılımı açısından birbirine benzemesini garanti eder.  
+
+Eğitim verilerini görmek istersek: 
+```{r}
+auto_train <- auto_split |> training()
+head(auto_train)
+```
+
+Test verileri: 
+```{r}
+auto_test <- auto_split |> testing()
+head(auto_test)
+```
+
+Test verisi, `auto_test`, sadece bir kez seçilen modelin başarısının değerlendirilmesinde kullanılacaktır.  
+
+```{r}
+auto_train |> 
+  ggplot(aes(mpg)) + 
+  geom_boxplot() +
+  labs(title="Eğitim verisi")
+auto_test |> 
+  ggplot(aes(mpg)) + 
+  geom_boxplot() +
+  labs(title="Test verisi")
+```
+
+
+Şimdi ilk modelimizi kuralım, `mpg`'nin `horsepower` üzerine regresyonunu tahmin edelim. Bunun için `{parsnip}` paketini kullanacağız ve aşağıdaki adımları takip edeceğiz: 
+
+1. Model türünü belirle. Bu örnekte `parsnip::linear_reg()`. Diğer modeller için bkz. [https://www.tidymodels.org/find/parsnip/](https://www.tidymodels.org/find/parsnip/)
+
+2. Modeli eğitmekte kullanılacak fonksiyonu belirle. Örneğimizde `lm()` fonksiyonunu kullanacağız: `parsnip::set_engine('lm')`. 
+
+3. Gözetimli öğrenme türünü belirle (regression ya da classification), `parsnip::set_mode('regression')`. 
+
+Bu bilgileri kullanarak model nesnesi yaratalım: `lm_model`
+```{r}
+lm_model <- linear_reg() |> 
+  set_engine('lm') |> 
+  set_mode('regression')
+```
+
+```{r}
+lm_model
+```
+
+Modeli eğitmeye hazırız. Bunun için `parsnip::fit()` fonksiyonu kullanılabilir: 
+
+```{r}
+auto_fit <- lm_model |> 
+  fit(mpg ~ horsepower, data = auto_train)
+```
+
+
+Sonuçları özetlemek için `broom::tidy()` ile tablo oluşturalım:  
+```{r}
+tidy(auto_fit)
+```
+
+Modelimiz eğittiğimize göre artık yeni verilerde (test ya da geçerleme verileri) kestirimleri ve hatayı hesaplayabiliriz: 
+```{r}
+auto_preds <- auto_fit |> 
+  predict(new_data = auto_test)
+```
+
+`auto_preds` nesnesinin içeriğine bakalım: 
+```{r}
+head(auto_preds)
+```
+
+Bu nesne `.pred` isimli tek bir sütundan oluşmaktadır.  
+
+Modelin performansını nasıl ölçebiliriz? Bunun için gerçek `mpg` ve `horsepower` değerlerini ve kestirimleri içeren bir veri kümesi oluşturalım:  
+
+```{r}
+auto_test_results <- auto_test |> 
+  select(mpg, horsepower) |> 
+  bind_cols(auto_preds)
+```
+
+Yeni veri kümesinin içeriği: 
+```{r}
+head(auto_test_results)
+```
+
+Tidymodels paketlerinden `{yardstick}` ile model değerlendirme ölçütlerini hesaplayabiliriz. Örneğin `rmse()` ortalama hata karesinin (MSE) kareköküdür: 
+```{r}
+auto_test_results |> 
+  rmse(truth = mpg, estimate = .pred)
+```
+
+`rmse()` iki girdiye ihtiyaç duyar, gerçek ve kestirilen değerler. 
+
+Başka bir başarı ölçütü gerçek ile tahmin arasındaki R-kare değeridir: 
+```{r}
+auto_test_results |> 
+  rsq(truth = mpg, estimate = .pred)  
+```
+Yüksek R-squared değerleri daha başarılı modellere işaret eder. 
+
+Tahmin ve gerçek değerlerin grafiğini de çizebiliriz: 
+```{r}
+ggplot(auto_test_results, aes(x = mpg, y = .pred)) +
+  geom_point() +
+  geom_abline(color = 'blue', linetype = 2) +
+  coord_obs_pred() +
+  labs(title = 'R-Squared Plot',
+       y = 'Predicted MPG',
+       x = 'Actual MPG')
+```
+
+
+Başarılı bir kestirim için tahmin (y ekseni) değerlerinin 45 derece doğrusu üzerinde dağılmasını bekleriz. Yukarıdaki örnekte ise lineer modelin çok başarılı olmadığını görüyoruz.  
+
+Şimdi karesel modeli tahmin edelim ve performansını değerlendirelim. Yine lineer regresyon yapısını kullanacağımız için `lm_model` nesnesini değiştirmemiz gerekmiyor. Ancak `fit()` formülümüz değişti:  
+
+```{r}
+auto_fit2 <- lm_model |> 
+  fit(mpg ~ horsepower + I(horsepower^2), data = auto_train)
+```
+
+
+Tahmin sonuçları: 
+```{r}
+tidy(auto_fit2)
+```
+
+
+Test verisi ile kestirimlerin hesaplanması:  
+```{r}
+auto_preds2 <- auto_fit2 |> 
+  predict(new_data = auto_test)
+```
+
+`auto_preds` nesnesinin içeriği: 
+```{r}
+auto_preds2
+```
+
+```{r}
+auto_test_results2 <- auto_test |> 
+  select(mpg, horsepower) |> 
+  bind_cols(auto_preds2)
+```
+
+İçeriği: 
+```{r}
+head(auto_test_results2)
+```
+
+`{yardstick}` paketiyle `rmse()` hesapları: 
+```{r}
+auto_test_results2 |> 
+  rmse(truth = mpg, estimate = .pred)
+```
+Doğrusal modele göre karesel modelin daha başarılı olduğunu görüyoruz. 
+
+```{r}
+# R-kare 
+auto_test_results2 |> 
+  rsq(truth = mpg, estimate = .pred)  
+```
+ 
+```{r}
+ggplot(auto_test_results2, aes(x = mpg, y = .pred)) +
+  geom_point() +
+  geom_abline(color = 'blue', linetype = 2) +
+  coord_obs_pred() +
+  labs(title = 'R-Squared Plot',
+       y = 'Predicted MPG',
+       x = 'Actual MPG')
+```
+
+R-kare ölçütüne göre de tahminlerin daha başarılı olduğu görülüyor.  
+
+`{tune}` paketinde yer alan `last_fit()` fonksiyonunu kullanarak kestirimleri ve performans ölçütlerini hesaplayabiliriz: 
+
+```{r}
+lm_last_fit <- lm_model |> 
+  last_fit(mpg ~ horsepower + I(horsepower^2), 
+           split = auto_split)
+```
+
+`tune::collect_metrics()` fonksiyonu: 
+```{r}
+lm_last_fit |> 
+  collect_metrics()
+```
+
+`tune::collect_predictions()` fonksiyonu:  
+```{r}
+lm_last_fit |> 
+  collect_predictions()
+```
+
+
+Tidymodels ile k-katlı çapraz geçerleme: 
+
+![](img/cv0-1.png) 
+
+![](img/cv1-1.png)
+
+
+
+
+İlk adım katların (grupların) oluşturulmasıdır. Bu amaçla `vfold_cv()` kullanılabilir. Örneğin k=5 için: 
+```{r}
+set.seed(12)
+folds <- vfold_cv(auto_train, v = 5)
+folds
+```
+
+Her kat için modeli eğitmek amacıyla bir workflow oluşturalım: 
+```{r}
+auto_wf <- workflow() |> 
+  add_model(lm_model) |>  
+  add_formula(mpg ~ horsepower + I(horsepower^2))
+auto_wf
+```
+
+```{r}
+auto_fit_rs <- auto_wf |> 
+  fit_resamples(folds)
+auto_fit_rs
+```
+RMSE ve rsq ölçütleri: 
+```{r}
+collect_metrics(auto_fit_rs)
+```
+
+
+
 
 
 <br>
