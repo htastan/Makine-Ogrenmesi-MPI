@@ -4,7 +4,7 @@ subtitle: Makine Öğrenmesi (MP İktisat TYL)
 author: 
   name: "Prof. Dr. Hüseyin Taştan"
   affiliation: "Yıldız Teknik Üniversitesi"
-date: "Haziran 2021"
+date: ""
 output:
   html_document: 
     number_sections: true
@@ -39,7 +39,9 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 
 # Ridge Regresyonu 
 
-`glmnet` paketiyle Ridge ve LASSO modelleri tahmin edilebilir. Bu paketteki temel fonksiyon olan  `glmnet()` sadece vektör ve matrisleri girdi olarak kabul etmektedir. Bu nedenle şimdiye kadar kullandığımız `y ~ x` regresyon modeli yapısını kullanmayacağız. Önce çıktı değişkenini içeren bir `y` vektörü ve kestirim değişkenlerini içeren bir `x` matrisi oluşturacağız. Verilerde eğer varsa kayıp gözlemler silinmelidir. `x` ve `y`'nin oluşturulmasında `model.matrix()` fonksiyonu kullanılabilir. Örnek olarak `Credit` verilerinde `Balance` değişkeni için bir doğrusal regresyon modeli kurmak istediğimizi düşünelim:  
+`glmnet` paketiyle Ridge ve LASSO modelleri tahmin edilebilir. Bu paketteki temel fonksiyon olan  `glmnet()` sadece vektör ve matrisleri girdi olarak kabul etmektedir. Bu nedenle şimdiye kadar kullandığımız `y ~ x` regresyon modeli yapısını kullanmayacağız. Önce çıktı değişkenini içeren bir `y` vektörü ve kestirim değişkenlerini içeren bir `x` matrisi oluşturacağız. Verilerde eğer varsa kayıp gözlemler silinmelidir. `x` ve `y`'nin oluşturulmasında `model.matrix()` fonksiyonu kullanılabilir. 
+
+Örnek olarak `Credit` verilerinde `Balance` değişkeni için bir doğrusal regresyon modeli kurmak istediğimizi düşünelim:  
 ```{r}
 library(ISLR)
 x <- model.matrix(Balance ~ . -ID, Credit)[,-1]
@@ -63,8 +65,7 @@ grid <- 10^seq(10,-2,length=100)
 ridge.mod <- glmnet(x, y, alpha=0, lambda=grid)
 ```
 
-Ayarlama parametresi $\lambda=10^{10}$ ile  
-$\lambda=10^{-2}$ arasında değerler almaktadır (istenirse `glmnet()`'in default değerleri de kullanılabilir). Bu grid değerleri tüm olanaklı modelleri kapsamaktadır. `glmnet()` değişkenleri otomatik olarak standardize eder. 
+Ayarlama parametresi $\lambda=10^{10}$ ile $\lambda=10^{-2}$ arasında değerler almaktadır (istenirse `glmnet()`'in default değerleri de kullanılabilir). Bu grid değerleri tüm olanaklı modelleri kapsamaktadır. `glmnet()` değişkenleri otomatik olarak standardize eder. 
 
 Her bir $\lambda$ değeri için elimizde bir katsayı kümesi vardır: 
 ```{r}

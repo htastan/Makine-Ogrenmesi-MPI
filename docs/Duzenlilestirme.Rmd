@@ -46,7 +46,7 @@ class: my-medium-font
 
 - Düzenlileştirme (Regularization) kavramı 
 
-- Çıkıntı regresyonu (Ridge regression)
+- Ridge regresyonu (Ridge regression)
 
 - LASSO 
 
@@ -63,11 +63,11 @@ class: my-medium-font
 
 - Bunlardan biri modelin doğrusal (additive) yapısını bozmadan doğrusal olmayan ilişkilerin eklenmesidir (örneğin polinom terimleri, splinelar, GAM). Modelin parametrelerde doğrusal yapısı aynı kaldığından en küçük kareler yöntemi uygulanabilir. 
 
-- Diğer bir yaklaşım ilgisiz kestirim değişkenlerin dışlanarak modelin performansının iyileştirilmesidir. 
+- Diğer bir yaklaşım ilgisiz kestirim değişkenlerinin dışlanarak modelin performansının iyileştirilmesidir. 
 
 - Değişken sayısının, $p$, çok fazla olduğu durumlarda özellikle faydalı olabilir. Yaygın kullanılan yöntemler şunlardır: 
   - Altküme seçimi
-  - Düzenlileştirme yaklaşımı (Shrinkage or regularization): bu yaklaşımda tüm değişkenleri dikkate alınır ancak bazılarının katsayıları sıfıra doğru küçültülür. 
+  - Düzenlileştirme yaklaşımı (Shrinkage, regularization): bu yaklaşımda tüm değişkenler dikkate alınır ve bazılarının katsayıları sıfıra doğru küçültülür. 
   - Boyut küçültme. 
 
 --- 
@@ -88,21 +88,21 @@ class: my-medium-font
 # Test hatasının dolaylı tahmini 
 
 
-- Bir doğrusal modelde değişken sayısın artarken SSR küçülür ve $R^2$ artar. Bu nedenle bu iki istatistik, SSR ve $R^2$ değerlendirme kıstası olamazlar. 
+- Bir doğrusal modelde değişken sayısı artarken kalıntı kareleri toplamı (RSS) küçülür ve $R^2$ artar (ya da aynı kalır). Bu nedenle bu iki istatistik, RSS ve $R^2$, değerlendirme kıstası olamazlar. 
 
 - Dolaylı yaklaşımda eğitim verilerinden elde edilen hata baz alınır ve aşırı uyumdan kaynaklanan sapma nedeniyle bir ceza terimi eklenir. Elde edilen bu ölçüt model karşılaştırmasında kullanılabilir. Yaygın olarak kullanılan ölçütler şunlardır: 
 - Mellow's $C_p$ 
 $$C_{p}=\frac{1}{n}\left(\mathrm{RSS}+2 d \hat{\sigma}^{2}\right)$$
-Burad $d$ modeldeki toplam parametre sayısı ve  $\hat{\sigma}^{2}$ hata varyansının bir tahminidir. 
+Burada $d$ modeldeki toplam parametre sayısı ve  $\hat{\sigma}^{2}$ hata varyansının bir tahminidir. 
 
 ---
 # Test hatasının dolaylı tahmini 
 
-- Akaike's Information Criterion (AIC): 
+- Akaike Information Criterion (AIC): 
 $$\mathrm{AIC}=-2 \log L+2 \cdot d$$
 Buarada $L$ logolabilirlik fonksiyonunun maksimum değeridir.  
 
-- Bayesion Information Criterion (BIC): 
+- Bayesian Information Criterion (BIC): 
 $$\mathrm{BIC}=\frac{1}{n}\left(\mathrm{RSS}+\log (n) d \hat{\sigma}^{2}\right)$$
 
 -  $C_p$ ve $AIC$ ölçütleri doğrusal modellerde normal dağılım varsayımı altında aynıdır.  
@@ -125,7 +125,7 @@ Burada RSS kalıntı kareleri toplamı ve TSS toplam kareler toplamıdır.
 ---
 # Test hatasının dolaysız tahmini
 
-- Test hatası geçerleme ve çapraz-geçerleme yaklaşımlarıyla doğrudan tahmin edilebilir.  
+- Test hatası geçerleme ve çapraz-geçerleme yaklaşımlarıyla doğrudan tahmin edilebilir. Bu yöntemleri (LOOCV, k-fold CV) önceki deslerimizde görmüştük. 
 
 - Bunun için veriler eğitim ve geçerleme olmak üzere iki parçaya ayrılır. Eğitim verileriyle model tahmin edilirken sadece geçerleme verileriyle test hatası tahmin edilir. 
 
@@ -133,7 +133,7 @@ Burada RSS kalıntı kareleri toplamı ve TSS toplam kareler toplamıdır.
 
 - Bunların arasından en küçük test hatasına sahip olan tercih edilir.  
 
-- Bu yöntemde test hatasının,  $\sigma^2$, tahmin edilmesi gerekmez. 
+- Kestirim performansı birbirine benzer modeller varsa bunların arasından küçük olanı (daha az parametre içeren) tercih edilebilir.  
 
 ---
 
@@ -147,7 +147,9 @@ Burada RSS kalıntı kareleri toplamı ve TSS toplam kareler toplamıdır.
 
 * $p>n$ ise sonsuz sayıda OLS çözümü vardır (sonsuz varyans). OLS kullanamayız. 
 
-* Düzenlileştirme: model katsayılarını kısıtlayarak (shrinkage) varyansı düşürebilir miyiz?
+* Düzenlileştirme: model katsayılarını kısıtlayarak/düzenlileştirerek (regularization) ya da sıfıra doğru "küçülterek" (shrinkage) varyansı düşürebilir miyiz?
+
+* Ridge ve LASSO: pratikte yaygın olarak bu iki yöntem temelde regresyon katsayılarını kısıtlayarak kestirim başarısını yükseltmeyi amaçlar. 
 
 ---
 # Tam Uyum: Basit Regresyon 
@@ -191,7 +193,7 @@ reg2 <- lm(y ~ x, data=df2)
 
 OLS amaç fonksiyonu 
 $$SSR = \sum_{i=1}^n (y_i -  \beta_0 - \beta_1 x_{i1}-\ldots-\beta_p x_{ip})^2$$
-Ridge regresyonu OLS'ye çok benzer ancak amaç fonksiyonuna bir ceza terimi ekler: 
+Ridge regresyonu OLS amaç fonksiyonuna bir ceza terimi ekler: 
 $$SSR_R = \sum_{i=1}^n (y_i -  \beta_0 - \beta_1 x_{i1}-\ldots-\beta_p x_{ip})^2 + \lambda \sum_{j=1}^p \beta_j^2 = SSR + \lambda \sum_{j=1}^p \beta_j^2$$
 $\lambda \geq 0$ ayarlama (tuning) parametresi
 
@@ -339,7 +341,7 @@ $0\leq \alpha \leq 1$.
 
 - LASSO'nun model seçiminde kullanılabileceğini öğrendik. Ancak model seçiminde iktisat teorisi de önemlidir. Örneğin, teorik modelden hareketle oluşturulan aşağıdaki modeli düşünelim: 
 $$y = \alpha\ d + X\beta + \epsilon$$
-burada  $y$ tepki değişkeni, $d$ potansiyel olarak içsel (endogenous) değişken (treatment variable) ve $X$ ise  $p$ kontrol değişkenini gösteren matristir. ($p>>n$ olabilir). 
+burada  $y$ tepki değişkeni, $d$ potansiyel olarak içsel (endogenous) değişken (treatment variable) ve $X$ ise  $p$ kontrol değişkenini gösteren matristir. ( $p>>n$ olabilir). 
 
 - Kontrol değişkenlerini, $x$, nasıl seçmeliyiz? Tek adımlı seçim prosedürü tipik olarak şöyle çalışır: herhangi bir $x_j$ değişkeni LASSO ve t-testi sonuçlarına göre anlamlıysa modele dahil edilir (post single-selection procedure).  
 
@@ -397,7 +399,9 @@ $$y_{i}=\theta_{0}+\sum_{m=1}^{M} \theta_{m} z_{i m}+\epsilon_{i}, \quad i=1, \l
 
 - Temel Bileşenler Analizi (PCA) birbiriyle ilişkisiz doğrusal kombinasyonların bulunmasının bir yöntemini sunar. Bir veri kümesinde değişken sayısı kadar temel bileşen bulunur. 
 
-- Bunlardan birinci temel bileşen verilerdeki değişkenliği en fazla açıklayan bileşendir. Bu bileşen bulunduktan sonra doğrusal regresyonda kullanılabilir.   
+- Bunlardan birinci temel bileşen verilerdeki değişkenliği en fazla açıklayan bileşendir. Bu bileşen bulunduktan sonra doğrusal regresyonda kullanılabilir. 
+
+- Bu yöntemi gözetimsiz öğrenme yöntemleri başlığı altında daha sonra inceleyeceğiz. 
  
 
 

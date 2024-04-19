@@ -1572,8 +1572,7 @@ border-radius: 0px;
 <h3 class="subtitle">Makine Öğrenmesi (MP İktisat TYL)</h3>
 <h4 class="author">Prof. Dr. Hüseyin Taştan</h4>
 <address class="author_afil">
-Yıldız Teknik Üniversitesi<br><h4 class="date">Haziran 2021</h4>
-
+Yıldız Teknik Üniversitesi<br>
 </div>
 
 
@@ -1597,9 +1596,10 @@ kullanmayacağız. Önce çıktı değişkenini içeren bir <code>y</code>
 vektörü ve kestirim değişkenlerini içeren bir <code>x</code> matrisi
 oluşturacağız. Verilerde eğer varsa kayıp gözlemler silinmelidir.
 <code>x</code> ve <code>y</code>’nin oluşturulmasında
-<code>model.matrix()</code> fonksiyonu kullanılabilir. Örnek olarak
-<code>Credit</code> verilerinde <code>Balance</code> değişkeni için bir
-doğrusal regresyon modeli kurmak istediğimizi düşünelim:</p>
+<code>model.matrix()</code> fonksiyonu kullanılabilir.</p>
+<p>Örnek olarak <code>Credit</code> verilerinde <code>Balance</code>
+değişkeni için bir doğrusal regresyon modeli kurmak istediğimizi
+düşünelim:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(ISLR)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(Balance <span class="sc">~</span> . <span class="sc">-</span>ID, Credit)[,<span class="sc">-</span><span class="dv">1</span>]</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>y <span class="ot">&lt;-</span> Credit<span class="sc">$</span>Balance </span></code></pre></div>
@@ -1632,8 +1632,7 @@ Elastik net için ara değerler girilebilir.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(glmnet)</span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="dv">10</span><span class="sc">^</span><span class="fu">seq</span>(<span class="dv">10</span>,<span class="sc">-</span><span class="dv">2</span>,<span class="at">length=</span><span class="dv">100</span>)</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>ridge.mod <span class="ot">&lt;-</span> <span class="fu">glmnet</span>(x, y, <span class="at">alpha=</span><span class="dv">0</span>, <span class="at">lambda=</span>grid)</span></code></pre></div>
-<p>Ayarlama parametresi <span class="math inline">\(\lambda=10^{10}\)</span> ile<br />
-<span class="math inline">\(\lambda=10^{-2}\)</span> arasında değerler
+<p>Ayarlama parametresi <span class="math inline">\(\lambda=10^{10}\)</span> ile <span class="math inline">\(\lambda=10^{-2}\)</span> arasında değerler
 almaktadır (istenirse <code>glmnet()</code>’in default değerleri de
 kullanılabilir). Bu grid değerleri tüm olanaklı modelleri kapsamaktadır.
 <code>glmnet()</code> değişkenleri otomatik olarak standardize eder.</p>
