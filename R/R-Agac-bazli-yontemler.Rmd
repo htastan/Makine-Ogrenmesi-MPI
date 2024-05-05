@@ -38,15 +38,20 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 
 # R ile Sınıflandırma Ağaçları
  
-`R`'da ağaç tahmini için çok sayıda paket vardır. Bunlardan biri hem regresyon hem de sınıflama ağaçlarının tahminini yapan `tree` paketidir. Burada örnek olarak  `Carseats` veri setini kullanacağız. `Sales` değişkeni 8 değeri kullanılarak ikili kategorik değişkene dönüştürülmüştür: 
+`R`'da ağaç tahmini için çok sayıda paket vardır. Bunlardan biri hem regresyon hem de sınıflama ağaçlarının tahminini yapan `tree` paketidir. Burada örnek olarak  `Carseats` veri setini kullanacağız. Değişken tanımları için bkz. `?Carseats`. 
+
+`Sales` değişkeni a ikili kategorik değişkene dönüştürülmüştür: 
 ```{r, warning=FALSE}
 library(tree)
-library(ISLR)
-attach(Carseats)
+library(ISLR) 
 Carseats$High <- factor(ifelse(Carseats$Sales<=8,"No","Yes"))  
 ```
 
-`High` Satışlar 8'den büyükse "Yes" (1) değilse "No" (0) değerini almaktadır. 
+`High` Satışlar 8 birimden (birim = 1000 USD) büyükse "Yes" (1) değilse "No" (0) değerini almaktadır: 
+```{r}
+contrasts(Carseats$High)
+```
+
 
 `Sales` değişkenini dışlayarak diğer tüm değişkenlerle `High` için bir ağaç tahmin edelim: 
 ```{r}
@@ -54,10 +59,12 @@ tree.carseats <- tree(High ~ . -Sales, data = Carseats)
 summary(tree.carseats) 
 ```
 
-Eğitim hata oranı %9 olarak bulunmuştur (misclassification error rate).
+Eğitim hata oranı %9 olarak bulunmuştur (misclassification error rate). Sapma (deviance) değeri aşağıdaki gibi tanımlıdır:  
+$$-2\sum_m\sum_k n_{mk}log\hat{p}_{mk}$$
+Burada  $n_{mk}$, $k$ sınıfına ait $m$ son düğüm noktasındaki (terminal node) gözlem sayısıdır. Düşük deviance değeri daha başarılı sınıflandırma anlamına gelir. Yukarıdaki özet çıktıda yer alan `Residual mean deviance` değeri sapma yani deviance değerinin $n-T_0$ değerine bölünmesiyle bulunur (gözlem sayısından son düğüm sayısı çıkarılır, 400-27). 
 
 Tahmin edilen ağacın yaprak sayısı 27'dir (terminal node): 
-```{r}
+```{r fig.height = 10, fig.width = 15}
 plot(tree.carseats)
 text(tree.carseats, pretty=0)
 ```
@@ -73,18 +80,32 @@ tree.carseats
 Test hata oranı: 
 ```{r}
 set.seed(2)
+# eğitim verilerinin gözlem numaralarını rassal olarak belirle
 train <- sample(1:nrow(Carseats), 200)
+# test verileri
 Carseats.test <- Carseats[-train,]
-High.test <- Carseats$High[-train]
-tree.carseats <- tree(High ~ . -Sales, Carseats, subset=train)
-tree.pred <- predict(tree.carseats, Carseats.test, type="class")
-table(tree.pred, High.test)
+High.test <- Carseats$High[-train] # test verisindeki hedef değişken
 ```
 
+
+```{r}
+# sınıflandırma modelini tekrar eğitelim: 
+tree.carseats <- tree(High ~ . -Sales, 
+                      data = Carseats, 
+                      subset = train)
+# test verisiyle sınıflandırma
+tree.pred <- predict(tree.carseats, 
+                     newdata =  Carseats.test, 
+                     type = "class")
+# confusion matrix
+table(tree.pred, High.test)
+```
+Buradan doğru sınıflandırma oranını (accuracy) hesaplayabiliriz: 
 ```{r}
 # correct prediction rate
 (104+50)/200
 ```
+Test verisinde gözlemlerin %77'si doğru sınıflandırılmıştır. 
 
 Ağacın çapraz geçerleme ile budanması,  `cv.tree()` fonksiyonu: 
 ```{r} 
@@ -121,33 +142,87 @@ Budanmış ağacın kestirim performansı nasıldır? `predict()` fonksiyonuyla 
 ```{r}
 tree.pred <- predict(prune.carseats, Carseats.test, type="class")
 table(tree.pred, High.test)
+```
+
+
+```{r}
 (97+58)/200
 ```
+Doğruluk oranı %77.5 olarak tahmin edilmiştir. Budanmamış ağaca göre küçük bir iyileşme olduğu görülmektedir. 
 
 <br/>
 
 # R ile Regresyon Ağaçları
 
-Örnek olarak `MASS` paketinde yer alan `Boston` ev fiyatları verisini kullanacağız. Bağımlı değişken medyan ev fiyatları (`medv`). Eğitim verilerinde ağaç tahmini: 
+Örnek olarak `MASS` paketinde yer alan `Boston` ev fiyatları verisini kullanacağız. Alternatif olarak `ISLR2` paketi de kullanılabilir. Hedef değişken medyan ev fiyatlarıdır (`medv`), ölçü birimi = 1000 USD. Değişkenlerin tanımı için bkz. `?Boston`.  
+
+Eğitim-test ayrımını yapalım: 
 ```{r}
-library(MASS)
+library(ISLR2)
 library(tree)
-set.seed(81)
+set.seed(81) # for replication
 train <- sample(1:nrow(Boston), nrow(Boston)/2)
+```
+
+Eğitim verilerini kullanarak bir regresyon ağacı tahmin edelim: 
+```{r}
 tree_boston <- tree(medv ~ ., 
                     data = Boston, 
                     subset = train)
 summary(tree_boston)
 ```
 
-Yukarıdaki çıktıya göre ağaçta 4 değişken year alıyor: "rm"    "lstat" "crim"  "age"  
+Yukarıdaki çıktıya göre ağaçta 5 değişken year alıyor: "lstat" "rm"    "age"   "nox"   "crim"  
 
-```{r}
+```{r fig.height = 8, fig.width = 10}
 plot(tree_boston)
 text(tree_boston, pretty=0)
 ```
 
-`lstat`: sosyoekonomik statüsü düşük olan hanelerin oranı. Bu değişkenin düşük olduğu yerlerde evler daha pahalıdır. 
+`lstat`: sosyoekonomik statüsü düşük olan hanelerin oranı. Bu değişkenin düşük olduğu yerlerde evler daha pahalıdır. Değişken tanımları: 
+
+```{r eval=FALSE, include=TRUE}
+# ?Boston
+crim
+per capita crime rate by town.
+
+zn
+proportion of residential land zoned for lots over 25,000 sq.ft.
+
+indus
+proportion of non-retail business acres per town.
+
+chas
+Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+
+nox
+nitrogen oxides concentration (parts per 10 million).
+
+rm
+average number of rooms per dwelling.
+
+age
+proportion of owner-occupied units built prior to 1940.
+
+dis
+weighted mean of distances to five Boston employment centres.
+
+rad
+index of accessibility to radial highways.
+
+tax
+full-value property-tax rate per $10,000.
+
+ptratio
+pupil-teacher ratio by town.
+
+lstat
+lower status of the population (percent).
+
+medv
+median value of owner-occupied homes in $1000s.
+```
+
 
 
 Ağacın budanması: 
@@ -163,12 +238,20 @@ plot(prune_boston)
 text(prune_boston, pretty=0)
 ```
 
-Budanmamış ağaç üzerinden test hatasının tahmini: 
+Budanmamış ağaç üzerinden test verisi kestirimleri: 
 ```{r}
 yhat <- predict(tree_boston, newdata = Boston[-train,])
 boston_test <- Boston[-train, "medv"]
+```
+
+
+```{r}
 plot(yhat, boston_test)
 abline(0,1)
+```
+
+Test MSE değeri: 
+```{r}
 mean((yhat - boston_test)^2)
 ```
 Test MSE = 18.93.  
@@ -372,6 +455,7 @@ yhat_xgb <- predict(xgb_boston, dtest)
 # MSE hesapla
 mean((yhat_xgb - test_boston$medv)^2)
 ```
+Test MSE = 11.427. 
 
 ```{r}
 # Çapraz geçerleme ile hiperparametre seçimi
@@ -438,7 +522,7 @@ titanic %>%
 ```
 
 
-Çıktı değişkenini oluştur: 
+Hedef değişkeni oluştur: 
 ```{r}
 titanic_tree_data <- titanic %>%
   mutate(Survived = if_else(Survived == 1, "Survived", "Died"),
@@ -492,10 +576,9 @@ titanic_tree_full <- ctree(Survived ~ Pclass + Sex + Age + SibSp +
                              Parch + Fare + Embarked,
                            data = titanic_tree_full_data)
 titanic_tree_full
-
 ```
 
-```{r}
+```{r fig.height = 10, fig.width = 15}
 plot(titanic_tree_full,  ip_args = list(pval = FALSE, id = FALSE),
      tp_args = list( id = FALSE) )
 ```

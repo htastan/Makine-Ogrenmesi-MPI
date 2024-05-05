@@ -66,7 +66,7 @@ name: basics
 
 * Ancak tek başına karar ağaçları kestirim açısından regresyon ve diğer sınıflandırma yöntemlerine göre daha başarısızdır. 
 
-* Çözüm: Gruplama teknikleri kullanmak. Çok sayıda ağaç tahmin edilip kestirimden önce bunların birleştirilmesine dayanan bu yöntemlere örnek olarak torbalama (bagging), rassal ormanlar (random forests), takviye (boosting) verilebilir.
+* Çözüm: Toplulaştırma teknikleri kullanmak (ensemble methods). Çok sayıda ağaç tahmin edilip kestirimden önce bunların birleştirilmesine dayanan bu yöntemlere örnek olarak torbalama (bagging), rassal ormanlar (random forests), takviye (boosting) verilebilir.
 
 ---
 name: regtrees 
@@ -167,12 +167,12 @@ $$\sum_{j=1}^{J} \sum_{i \in R_{j}}\left(y_{i}-\hat{y}_{R_{j}}\right)^{2}$$
 ]
 
 .pull-right[
-* Herhangi bir düğüm noktasında $X_j \leq t_k$ soldak dalı, $X_j>t_k$ ise sağdaki dalı işaret etmektedir. 
+* Herhangi bir düğüm noktasında $X_j \leq t_k$ soldaki dalı, $X_j>t_k$ ise sağdaki dalı işaret etmektedir. 
 * Örneğin, $X_1\leq t_1$ ve $X_2\leq t_2$ ise $R_1$ tahmini yapılır. 
 ]
 
 ---
-# Örnek: Data = Hitters 
+# Örnek: Data = Hitters (ISLR)
 
 .pull-left[
 ![](img/tree9.PNG)
@@ -183,7 +183,7 @@ $$\sum_{j=1}^{J} \sum_{i \in R_{j}}\left(y_{i}-\hat{y}_{R_{j}}\right)^{2}$$
 * Salary değişkeninin doğal logaritması alındı. 
 * Modele göre tecrübesi (Years) 4.5 yıldan az olan bir sporcu için log(Salary) tahmini 5.11'dir. Para birimi cinsinden: $1000\times e^{5.11}=165174$ `$`
 
-* Ligde 4.5 yıldan fazladır oynayan ve 117.5'den daha az vuruş yapan bir sporcu için maaş tahmini: $1000\times e^{6}=402834$ `$`
+* Ligde en az 4.5 yıldır oynayan ve 117.5'den daha az vuruş yapan bir sporcu için maaş tahmini: $1000\times e^{6}=402834$ `$`
 ]
 
 ---
@@ -194,7 +194,7 @@ $$\sum_{j=1}^{J} \sum_{i \in R_{j}}\left(y_{i}-\hat{y}_{R_{j}}\right)^{2}$$
 ]
 
 .pull-right[
-* Bu grafikte verilerin üç bölgeye ayrılması gösterilmektedir. 
+* Bu grafikte, verilerin üç bölgeye ayrılması gösterilmektedir. 
 * Alt bölgeler aşağıdaki gibi yazılabilir: 
 1. $R_1 = \{X| Years<4.5\}$
 1. $R_2 = \{X| Years\geq 4.5,~Hits<117.5 \}$
@@ -215,7 +215,8 @@ $$\sum_{j=1}^{J} \sum_{i \in R_{j}}\left(y_{i}-\hat{y}_{R_{j}}\right)^{2}$$
 1. $R_2 = \{X| Years\geq 4.5,~Hits<117.5 \}$
 1. $R_3 = \{X| Years\geq 4.5,~Hits\geq 117.5 \}$
 
-* Yeni bir gözlem çifti için ait olduğu bölgenin maaş ortalaması (kırmızı) ile kestirim yapılır. ]
+* Yeni bir gözlem çifti için ait olduğu bölgenin maaş ortalaması (kırmızı) ile kestirim yapılır. 
+]
 
 ---
 # Ağacın Budanması 
@@ -224,7 +225,7 @@ $$\sum_{j=1}^{J} \sum_{i \in R_{j}}\left(y_{i}-\hat{y}_{R_{j}}\right)^{2}$$
 
 * Bunun nedeni aşırı uyumdur (overfitting). Ortaya çıkan ağaç çok büyük olma eğilimindedir. 
 
-* Altarnatif: gereksiz dalları (branches) budayarak daha küçük ve daha başarılı kestirim performansına sahip ağaç oluşturmak. Küçük ağaç = son düğüm noktaları (yaprakları) daha az.  
+* Alternatif: gereksiz dalları (branches) budayarak daha küçük ve daha başarılı kestirim performansına sahip ağaç oluşturmak. Küçük ağaç = son düğüm noktaları (yaprakları) daha az.  
 
 * Küçük ağaçlar az miktarda sapma içerse de varyansları çok daha düşüktür. 
 
