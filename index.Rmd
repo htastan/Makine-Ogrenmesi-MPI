@@ -70,9 +70,22 @@ knitr::opts_chunk$set(echo = TRUE)
     - Sunum notları: [html](docs/Agac-bazli-yontemler.html)  
     - Uygulamalar: [html](R/R-Agac-bazli-yontemler.html) | [RMarkdown](R/R-Agac-bazli-yontemler.Rmd)  
 <br/>
+
 10. Gözetimsiz Öğrenme
     - Sunum notları: [html](docs/Gozetimsiz-Ogrenme.html)  
-    - Uygulamalar: [html](R/R-Gozetimsiz-ogrenme.html) | [RMarkdown](R/R-Gozetimsiz-ogrenme.Rmd)   
+    - Uygulamalar: [html](R/R-Gozetimsiz-ogrenme.html) | [RMarkdown](R/R-Gozetimsiz-ogrenme.Rmd) 
+<br/>
+<br/>
+
+11. Metin verileri (İngilizce)
+    -   Uygulamalar ({tidytext} paketi): [html](https://htastan.github.io/Machine-Learning-in-Economics/Labs/Lab-11-Text-mining.html) | [.Rmd](https://htastan.github.io/Machine-Learning-in-Economics/Labs/Lab-11-Text-mining.Rmd)
+    -   Uygulamalar ({tm} paketi) (by Alican Yıldırım): [html](https://htastan.github.io/Machine-Learning-in-Economics/Labs/TM.html) | [.Rmd](https://htastan.github.io/Machine-Learning-in-Economics/Labs/TM.Rmd)
+<br/>
+<br/>
+
+12. Derin Öğrenme
+    - Sunum notları: [html](docs/Derin-Ogrenme.html)  
+    - Uygulamalar: [html](R/R-Derin-ogrenme.html) | [RMarkdown](R/R-Derin-ogrenme.Rmd)
 <br/>
 <br/>
 

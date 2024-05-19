@@ -1,0 +1,356 @@
+---
+title: "Derin Öğrenmeye Giriş" 
+subtitle: Makine Öğrenmesi (MP İktisat TYL)
+author: 
+  name: "Prof. Dr. Hüseyin Taştan"
+  affiliation: "Yıldız Teknik Üniversitesi"
+date: ""
+output:
+  html_document: 
+    number_sections: true
+    self_contained: true
+    theme: lumen
+    highlight: haddock 
+    # code_folding: show
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: false
+---
+<style type="text/css"> 
+body{
+  background-color: #FAFAFA;
+  font-size: 18px;
+  line-height: 1.8;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis')
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+``` 
+
+<br/>
+<br/>
+
+
+# R'da YSA (ANN) paketleri
+
+Yapay sinir ağları için geliştirilmiş bazı R paketleri şunlardır: 
+
+[nnet](https://cran.r-project.org/web/packages/nnet/index.html), [neuralnet](https://cran.r-project.org/web/packages/neuralnet/index.html), and [RSNNS](https://cran.r-project.org/web/packages/RSNNS/index.html). 
+
+## `{neuralnet}`  
+
+```{r}
+library(tidyverse)
+library(neuralnet)
+```
+
+## Örnek: Simülasyon verileri 
+
+```{r}
+# simulate data 
+set.seed(1)
+x1=rnorm(1000)
+x2=rnorm(1000)
+x3=rnorm(1000)
+
+y=10 + 2*x1 -5*x2 +4*x3 + 3*x1*x2 - 8*x1*x3 + 2*x2*x3 + 5*x1*x2*x3 + rnorm(1000)
+df <- tibble(y,x1,x2,x3)
+```
+
+```{r}
+# YSA tek katman, aktivasyon=identity
+set.seed(12345)
+nnet0 <- neuralnet(y ~ x1 + x2 + x3, data=df, act.fct = identity)
+summary(nnet0)
+nnet0$result.matrix
+```
+
+
+```{r}
+plot(nnet0, rep = "best")
+```
+
+Lineer regresyon OLS tahmini: 
+```{r}
+regfit0 <- lm(y ~ x1 + x2 + x3, data=df)
+summary(regfit0)
+```
+
+Değişkenleri 0-1 aralığında olacak şekilde standardize edelim:
+```{r}
+# scale function
+scale1 <- function(x){
+  (x - min(x)) / (max(x) - min(x))
+}
+#
+dfs <- df |> 
+  mutate_all(scale1)
+```
+
+Train-test ayırımı: 
+```{r}
+# %75 train %25 test
+set.seed(555)
+train_id <- sample(1000, 750)
+dfs_train <- dfs[train_id, ]
+dfs_test <- dfs[-train_id, ]
+```
+
+
+```{r}
+# 1 hücreli tek katman, default act.fct = "logistic" (i.e., sigmoid)
+# single neuron, single layer, default act.fct = "logistic" (i.e., sigmoid)
+nnet1 <- neuralnet(y ~ x1 + x2 + x3, 
+                   data = dfs_train)
+plot(nnet1, rep = "best")
+```
+
+
+```{r}
+# 2 hücreli tek katman
+# single layer 2 neurons
+nnet2 <- neuralnet(y ~ x1 + x2 + x3, 
+                   data = dfs_train, 
+                   hidden = 2)
+plot(nnet2, rep = "best")
+```
+
+```{r}
+# 3 neurons
+nnet3 <- neuralnet(y ~ x1 + x2 + x3, 
+                   data = dfs_train, 
+                   hidden = 3)
+plot(nnet3, rep = "best")
+```
+```{r}
+# 2 hidden layers with 3 neurons each
+# relu <- function(x) {max(0,x)}
+nnet4 <- neuralnet(y ~ x1 + x2 + x3, 
+                   data = dfs_train, 
+                   hidden = c(3,3))
+plot(nnet4, rep = "best")
+```
+
+Test veri setinde kestirim hatası: 
+```{r}
+pred_nnet4 <- predict(nnet4, newdata = dfs_test)
+mse_nnet4 <- mean((dfs_test$y - pred_nnet4)^2)
+mse_nnet4
+```
+
+Bunu lineer regresyon ile karşılaştıralım:  
+```{r}
+linreg <- lm(y ~ x1 + x2 + x3, data = dfs_train)
+pred_linreg <- predict(linreg, newdata = dfs_test)
+mse_linreg <- mean((dfs_test$y - pred_linreg)^2)
+mse_linreg
+```
+
+Bu YSA modeline göre daha büyüktür. Lineer modele etkileşim terimleri ekleyelim:  
+```{r}
+linreg2 <- lm(y ~ x1*x2*x3, data = dfs_train)
+summary(linreg2)
+```
+
+Test MSE: 
+```{r}
+options(scipen = 999) # turn off scientific display
+pred_linreg2 <- predict(linreg2, newdata = dfs_test)
+mse_linreg2 <- mean((dfs_test$y - pred_linreg2)^2)
+mse_linreg2 
+```
+
+Bu çok daha başarılı bir kestirim performansına sahiptir. Ancak burada doğru modeli bildiğimiz için doğrudan tahmin ettik. Çok sayıda kestirim değişkenlerinin olduğu durumda hangi etkileşimleri ekleyeceğimizi genellikle bilemeyiz.
+
+Kestirimleri görselleştirebiliriz: 
+```{r}
+data_pred <- tibble(pred_nnet4, 
+                    pred_linreg, 
+                    pred_linreg2, 
+                    truth = dfs_test$y)
+#
+p1 <- ggplot(data_pred, aes(truth, pred_nnet4)) + 
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("NNET4")
+p2 <- ggplot(data_pred, aes(truth, pred_linreg)) + 
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("Linear regression")
+p3 <- ggplot(data_pred, aes(truth, pred_linreg2)) + 
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("Lin reg w/interactions")
+# plot 
+library(patchwork)
+p1 | p2 | p3
+```
+
+
+
+
+## Örnek: Boston housing data 
+
+```{r}
+library(tidyverse)
+library(MASS)
+library(neuralnet)
+data("Boston")
+```
+
+```{r}
+# scale variables, except chas and medv
+# boston <- as_tibble(Boston) %>% 
+#  mutate(across(.cols=-c("chas","medv"), scale1))
+boston <- as_tibble(Boston) |>  
+  mutate(across(.cols=-c("chas"), scale1))
+# scale1 was defined previously
+```
+
+
+```{r}
+# train-test split
+library(rsample) 
+set.seed(10) # for replication
+boston_split <- initial_split(boston, 
+                           prop = 0.75, 
+                           strata = medv)
+```
+
+```{r}
+# train-test data
+boston_train <- boston_split |> training()
+boston_test <- boston_split |> testing()
+```
+
+```{r}
+# iki saklı katman, herbirinde 5 nöron
+set.seed(1010)
+nn1 <- neuralnet(medv ~ crim + zn + indus + chas + nox + rm + age + 
+                   dis + rad + tax + ptratio + black + lstat,
+                 data = boston_train,
+                 hidden = c(5,5))
+```
+
+
+```{r}
+# ANN(5,5) architecture
+plot(nn1, col.hidden = 'darkgreen',     
+     col.hidden.synapse = 'darkgreen',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue', 
+     rep = "best"   # to render graph in html output
+     )
+```
+
+```{r}
+# predictions
+pred_nn1 <- predict(nn1, newdata = boston_test)
+
+# convert scale1 
+pred_nn1_converted <- (max(pred_nn1)-min(pred_nn1))*pred_nn1 + min(pred_nn1)
+test_medv <- (max(boston_test$medv)-min(boston_test$medv))*boston_test$medv + min(boston_test$medv)
+# create a tibble 
+result_data <- tibble(test_medv, pred_nn1_converted)
+head(result_data)
+```
+
+
+```{r}
+# MSE  
+mse_boston_nn1 <- mean((pred_nn1_converted - test_medv)^2)
+mse_boston_nn1
+```
+Compare to linear regression: 
+```{r}
+# linear regression with full set of variables
+reg1 <- lm(medv ~ crim + zn + indus + chas + nox + rm + age + dis + rad + tax + 
+                   ptratio + black + lstat, data = boston_train)
+pred_reg1 <- predict(reg1, newdata = boston_test)
+pred_reg1_converted <- (max(pred_reg1)-min(pred_reg1))*pred_reg1 + min(pred_reg1)
+result_data$pred_reg1_converted <- pred_reg1_converted
+head(result_data)
+```
+
+
+```{r}
+# MSE lin reg
+mse_boston_reg1 <- mean((pred_reg1_converted - test_medv)^2)
+mse_boston_reg1
+```
+
+
+```{r}
+# compare predictions 
+p1 <- ggplot(result_data, aes(test_medv, pred_nn1_converted)) + 
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("ANN(5,5)")
+p2 <- ggplot(result_data, aes(test_medv, pred_reg1_converted)) + 
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("Linear Regression") 
+# plot 
+library(patchwork)
+p1 | p2  
+```
+
+## Örnek: Sınıflandırma 
+
+```{r}
+library(ISLR2)
+library(tidyverse)
+
+head(Smarket) 
+```
+```{r}
+Smarket <- as_tibble(Smarket) |>  
+  mutate(across(.cols=-c("Direction"), scale1))
+Smarket |> mutate(Direction = ifelse(Direction == "Up", 1, 0))
+```
+
+```{r}
+set.seed(123)
+nn1_smarket <- neuralnet(Direction ~ Lag1 + Lag2 + Lag3 +
+                 Lag4 + Lag5 + Volume, data = Smarket,
+                 linear.output = FALSE, 
+                 err.fct = "ce", 
+                 hidden = 2,
+                 likelihood = TRUE)
+```
+
+```{r}
+plot(nn1_smarket, rep = "best")
+```
+
+
+
+
+# RNN ile Finansal Zaman Serilerinin Öngörülmesi (Forecasting)
+
+Recurrent Neural Networks (RNN) ile zaman serisi öngörüleri için bkz.:
+
+<https://www.statlearning.com/>. 
+
+Özellikle bkz. Ch.10 lab: 
+
+<https://hastie.su.domains/ISLR2/Labs/Rmarkdown_Notebooks/Ch10-deeplearning-lab-torch.html>
+
+Burada R `{torch}` paketi kullanılmaktadır. Alternatif olarak `{keras}` versiyonu da bulunmaktadır. 
+
+Bölüm 10.5.2'deki örnek için: 
+
+<https://hastie.su.domains/ISLR2/Labs/Rmarkdown_Notebooks/Ch10-deeplearning-lab-torch.html>
+
+
+<br>
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
+
+
