@@ -56,6 +56,8 @@ output:
 
 - [Recurrent Neural Networks](#rnn)
 
+- [Metin verileri](#text)
+
 
 ---
 name: ysa 
@@ -64,11 +66,10 @@ name: ysa
 
 ![:scale 200%](img/ann1.PNG)  
  
-
-- Yapay sinir ağları beyindeki sinir hücrelerinin (nöronların) çalışma prensiplerinden hareketle oluşturulan doğrusal olmayan ve oldukça esnek modellerdir.
-
-- Biyolojik sinir ağları elektrik sinyallerini kullanarak bilgiyi iletebilen ve çıktı üreten nöronlardan oluşur.   
-
+- Yapay sinir ağları, beyindeki sinir hücrelerinin (nöronların) yapısı ve işlevinden esinlenen, doğrusal olmayan ve oldukça esnek modellerdir.
+- Biyolojik sinir ağları, elektrik sinyalleri ile iletişim kuran nöronlardan oluşur ve birlikte karmaşık çıktılar üretirler.
+- Her nöron, gelen sinyalleri toplar ve bu sinyallerin toplam gücü belirli bir eşik değeri aşarsa “aktifleşir” ve bağlı nöronlara elektriksel bir sinyal gönderir.
+- Birbirine bağlı bu nöron ağı, beyinde karmaşık bilgi işlemi, öğrenme ve karar verme süreçlerini mümkün kılar.
 
 ---
 # Yapay Sinir Ağları (YSA) 
@@ -145,10 +146,37 @@ name: struct
 - Bir ANN'nin bileşenleri: 
   - Girdiler: $x_1, x_2,\ldots,x_p$ 
   - Ağırlıklar (bilinmeyen parametreler): $w_1,w_2,\ldots,w_p$, ve $w_0$ (sabit ya da sapma/bias) 
-  - Toplama fonksiyonu: $\sum_{j=1}^{d} w_{j} x_{j}+w_{0}$ 
-  - Aktivasyon fonksiyonu: $h(\cdot)$ 
+  - Toplama fonksiyonu: $\sum_{j=1}^{p} w_{j} x_{j}+w_{0}$ 
+  - Aktivasyon fonksiyonu: $g(\cdot)$ 
 - Basit bir ANN (perceptron/algılayıcı) şu şekilde yazılabilir: 
-$$y=h\left( \sum_{j=1}^{d} w_{j} x_{j}+w_{0} \right)$$
+$$y=g\left( \sum_{j=1}^{d} w_{j} x_{j}+w_{0} \right)$$
+
+---
+# 🔧 Tek Gizli Katmanlı bir ANN'nin Bileşenleri
+
+Gizli katmandaki birim (neuron) sayısı $K$ olsun. Modelin katmanları:
+
+1. **Gizli katman (girdilerin doğrusal olmayan transformasyonu)**  
+   Her bir gizli katman için $k = 1, \ldots, K$:
+   $$A_k = h_k(X) = g\left(w_{k0} + \sum_{j=1}^{p} w_{kj} X_j \right)$$
+where 
+   - $g(\cdot)$: aktivasyon fonksiyonu (e.g., ReLU, sigmoid)  
+   - $w_{kj}$: $j$ girdisinden $k$ birimine ağırlıklar  
+   - $w_{k0}$: $k$ birimi için sapma/bias terimi 
+
+---
+# 🧾 Çıktı katmanı
+
+Çıktı, gizli birimlerin  doğrusal bir fonksiyonudur:
+$$f(X) = \beta_0 + \sum_{k=1}^{K} \beta_k A_k$$
+
+- Aktivasyonlar $A_k$, dönüştürülmüş özellikler gibi davranır.  
+
+- Katsayılar $\beta_0, \ldots, \beta_K$ ile ağırlıklar $w_{kj}$, veriden tahmin edilir.  
+
+- Ağ, girdileri doğrusal olmayan aktivasyon fonksiyonlarıyla dönüştürür, ardından çıktı katmanında doğrusal bir kombinasyon yapar.  
+
+- Ayarlanma parametreleri: Modelin yapısını ve öğrenme sürecini kontrol eden çeşitli parametreler. Bu parametreler eğitim sırasında performansı etkiler ve genellikle deneysel olarak seçilir
 
 
 ---
@@ -399,8 +427,88 @@ name: rnn
 
 (NYSE örneği için 427. sayfaya bakınız)
 
+---
+# NYSE Örneği (sf. 427)
+
+.pull-left[
+![:scale 90%](img/lstm1.PNG) 
+
+(Görsel kaynağı: James ve ark., ISLR, 2. baskı, sf. 427) 
+]
+
+.pull-right[
+- Bu şekil, log işlem hacmini, Dow Jones günlük getirilerini ve log volatiliteyi (günlük aralık mutlak değeri) gösteriyor.  
+- Hedef: log işlem hacmini tahmin etmek.  
+- Veri: önemli otokorelasyona sahip zaman serisi — geçmiş değerler şimdiki değerlerle güçlü şekilde ilişkili.  
+- RNN yaklaşımı: zaman bağımlılıklarını modellemek için değişkenlerin gecikmeli değerlerini sıralı girdiler olarak dahil etmek.  
+- RNN avantajı: geleneksel modellerin gözden kaçırabileceği karmaşık örüntüleri ve doğrusal olmayan dinamikleri yakalar.  
+]
+
 <!-- --- -->
 
 <!-- ![:scale 50%](img/lstm1.PNG)  -->
 
 <!-- (image source: James et al. ISLR, 2nd ed., p.427)  -->
+
+---
+name: text 
+
+# Metin/Belge Sınıflandırması
+
+- Metin verisi, müşteri yorumları, geri bildirimler, ekonomik raporlar, haber makaleleri ve sosyal medya paylaşımları gibi ekonomik bilgi için faydalı kaynakları içerir.
+
+- Genellikle **yapılandırılmamıştır**: kelime dizileri veya koleksiyonları olarak temsil edilir, sabit sayısal forma sahip değildir.
+
+- Geleneksel Yaklaşım: **Kelime Torbası (BoW - Bag-of-Words)** — kelime sırasını göz ardı ederek metni kelime frekans vektörlerine dönüştürür.
+
+
+- BoW ile Duygu Analizi:
+  - Kelimelere duygu skorları atar (pozitif, negatif, nötr).
+  - Kelime skorlarını toplayarak belgenin ya da yorumun genel duygusunu çıkarır.
+  - Metin verilerinden tüketici güveni veya piyasa havası ölçmekte kullanılabilir.
+
+- BoW sınırlamaları: anlam için önemli olan bağlamı ve kelime sıralamasını kaybeder.
+
+---
+# Metin/Belge Verisi için Derin Öğrenme
+
+- Derin öğrenme, anlamsal bilgiyi yoğun vektör biçiminde yakalayan kelime gömme (Word2Vec, GloVe) yöntemlerini kullanır.
+
+- RNN, LSTM ve Transformer (örneğin BERT) gibi yöntemler kelime sırasını ve bağlamı yakalar.
+
+- Bu yöntemler duygu analizi, konu modelleme ve belge sınıflandırma gibi görevlerde önemli gelişmeler sağlar.
+
+- Ekonomi alanında uygulamalar:
+  - Finans haberleri ve raporlarında piyasa duyarlılığını analiz etmek.
+  - Ekonomik göstergelerin tahmini için metinsel verilerden özellik çıkarmak.
+  - Ekonomik trendlerle ilgili politika belgeleri veya sosyal medyadaki örüntüleri tespit etmek.
+
+---
+# Duygu Analizi için RNN Kullanımı
+
+- Problem: Film yorumlarını pozitif ya da negatif olarak sınıflandırmak.
+- Veri: Her yorum bilinen bir duygu etiketiyle eşleşir (pozitif veya negatif) — denetimli öğrenme.
+- Girdi: Yorumdan bir kelime dizisi (örneğin "Film müthiş ve heyecan vericiydi").
+
+- RNN nasıl çalışır:
+  - Kelimeleri tek tek okur, bağlamla ilgili “hafızasını” günceller.
+  - İlk kelimelerin sonraki kelimelerin anlamını nasıl etkilediğini yakalar (örn. "kötü değil" ile "kötü" arasındaki fark).
+- Eğitim: Model, tahmin ettiği duygu ile gerçek etiket arasındaki hatayı minimize edecek şekilde parametrelerini ayarlar.
+- Çıktı: Yorumun tamamı işlendiğinde pozitif ya da negatif duygu tahmini yapar.
+- Neden daha iyi: Basit BoW’dan farklı olarak RNN, kelime sırasını ve bağlamı anlar, böylece daha doğru duygu sınıflandırması yapar.
+
+---
+# RNN’lerin Metin Analizindeki Sınırlamaları
+
+- Metnin çok gerisindeki bilgileri hatırlamakta zorlanırlar:
+  - Cümlenin ya da paragrafın çok önceki kelime ve fikirlerini kullanmakta güçlük çekerler.
+- Kelimeleri teker teker işlerler:
+  - Bu durum eğitimi yavaşlatır çünkü birçok kelimeyi aynı anda işleyemezler (paralel işlemeyi zorlaştırır).
+- Sınırlı bağlamı göz önünde tutabilirler:
+  - Gelişmiş versiyonları bile çok uzun metinleri tam anlamıyla kavramakta zorlanır.
+- İyi öğrenmek için çok sayıda etiketli örnek gerekir:
+  - Yeterli ve kaliteli veri toplamak maliyetli veya zor olabilir.
+- Karmaşık dil yapılarıyla ilgili zorluklar:
+  - İroni, ince anlam veya belirsiz cümleleri anlamakta güçlük çekerler.
+- **Neden önemli:** Bu zorluklar, birçok kelimeyi aynı anda işleyebilen, uzun menzilli bağlamı daha iyi kavrayan ve günümüzün güçlü **Büyük Dil Modellerinin (LLM’ler)** temelini oluşturan **transformer** mimarilerinin geliştirilmesine ilham vermiştir.
+

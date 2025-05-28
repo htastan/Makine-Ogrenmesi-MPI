@@ -86,7 +86,13 @@ knitr::opts_chunk$set(echo = TRUE)
 12. Derin Öğrenme
     - Sunum notları: [html](docs/Derin-Ogrenme.html)  
     - Uygulamalar: [html](R/R-Derin-ogrenme.html) | [RMarkdown](R/R-Derin-ogrenme.Rmd)
+    - ANN (Python notebook): [Google colab link](https://colab.research.google.com/drive/1cStMMCXz5qZBreBPkKE7_Tw2_2RoBFSF?usp=sharing) 
 <br/>
 <br/>
+13. Büyük Dil Modelleri (İngilizce) - Large Language Models (LLMs)
+
+    -   Slides: [html](https://htastan.github.io/Machine-Learning-in-Economics/Slides/LLMs.html#1) 
+    - Word Embeddings (Python notebook): [Google colab link](https://colab.research.google.com/drive/1pKbGZJlvHWYxHTeRxUguCaUfNWHK8Jch?usp=sharing) 
+    - Fundamentals of Transformers (Python notebook): [Google colab link](https://colab.research.google.com/drive/1bHWbxej6KESFzMC_ocoCarE7hRkwOGPm?usp=sharing) 
 
 
